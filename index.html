@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>TPU2 — Körper-Nachzeichner</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; display:flex; justify-content:center; align-items:center; height:100vh; }
+  canvas { display:block; cursor:crosshair; image-rendering:pixelated; }
+</style>
+</head>
+<body>
+<canvas id="c" width="800" height="520"></canvas>
+<script>
+'use strict';
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3 });
+let screen = STATE.INTRO;
+let dirty = true;
+
+function setScreen(s) { screen = s; dirty = true; }
+function requestRender() { dirty = true; }
+
+function loop() {
+  if (dirty) { dirty = false; render(); }
+  requestAnimationFrame(loop);
+}
+
+function render() {
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, 800, 520);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  if      (screen === STATE.INTRO)      drawIntro();
+  else if (screen === STATE.DIFFICULTY) drawDifficulty();
+  else if (screen === STATE.PLAYING)    drawGame();
+  else if (screen === STATE.COMPLETE)   drawComplete();
+}
+
+// placeholders — filled in by later tasks
+function drawIntro()      { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('INTRO',20,40); }
+function drawDifficulty() { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('DIFFICULTY',20,40); }
+function drawGame()       { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('GAME',20,40); }
+function drawComplete()   { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('COMPLETE',20,40); }
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
