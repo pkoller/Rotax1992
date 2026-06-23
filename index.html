@@ -51,6 +51,63 @@ function isActive(active, i, j, k) {
   return i>=0&&i<2&&j>=0&&j<2&&k>=0&&k<2 && !!active[i][j][k];
 }
 
+// ── Visibility ──
+
+// Returns true if face normal (nx,ny,nz) faces toward viewer in preview orientation
+function previewFaceVisible(nx, ny, nz) {
+  return (-nx + 4*ny + nz) > 0; // dot with view direction (-1,4,1)
+}
+
+// Returns true if face normal (nx,ny,nz) faces toward viewer in puzzle orientation (after Z-rotation)
+// Puzzle view direction in original coords = (4,1,1)
+function puzzleFaceVisible(nx, ny, nz) {
+  return (4*nx + ny + nz) > 0;
+}
+
+// Core visibility check: edge is visible if any perpendicular face is
+// (a) viewer-facing AND (b) exposed (inner cube active, outer cube empty/OOB)
+function isEdgeVisible(e, active, faceVisibleFn) {
+  // Determine perpendicular face normals based on edge direction
+  let normals;
+  if      (e.x2 > e.x1) normals = [{nx:0,ny:1,nz:0},{nx:0,ny:-1,nz:0},{nx:0,ny:0,nz:1},{nx:0,ny:0,nz:-1}];
+  else if (e.y2 > e.y1) normals = [{nx:1,ny:0,nz:0},{nx:-1,ny:0,nz:0},{nx:0,ny:0,nz:1},{nx:0,ny:0,nz:-1}];
+  else                   normals = [{nx:1,ny:0,nz:0},{nx:-1,ny:0,nz:0},{nx:0,ny:1,nz:0},{nx:0,ny:-1,nz:0}];
+
+  const mx=(e.x1+e.x2)/2, my=(e.y1+e.y2)/2, mz=(e.z1+e.z2)/2;
+
+  for (const {nx,ny,nz} of normals) {
+    if (!faceVisibleFn(nx,ny,nz)) continue;
+    // Normal axis: midpoint is half-integer (0.5 offset); epsilon ensures floor goes toward inner cube
+    // Non-normal axes: midpoint is either integer (shared boundary) or half-integer (within one cube)
+    //   - half-integer: single cube, use floor(m)
+    //   - integer: edge on cube boundary, check both adjacent cubes [floor(m)-1, floor(m)]
+    const halfInt = v => (v*2)%2 !== 0; // true when v is a half-integer like 0.5, 1.5
+    const candidates = (m, isNormal) => {
+      if (isNormal) return [Math.floor(m - 0.5*isNormal - 1e-9)]; // single inner cube on normal axis
+      if (halfInt(m)) return [Math.floor(m)]; // solidly within one cube
+      return [Math.floor(m)-1, Math.floor(m)]; // on boundary, check both
+    };
+    const iCands = candidates(mx, nx);
+    const jCands = candidates(my, ny);
+    const kCands = candidates(mz, nz);
+    const iOut = nx ? Math.floor(mx + 0.5*nx - 1e-9) : null;
+    const jOut = ny ? Math.floor(my + 0.5*ny - 1e-9) : null;
+    const kOut = nz ? Math.floor(mz + 0.5*nz - 1e-9) : null;
+    for (const ii of iCands) for (const jj of jCands) for (const kk of kCands) {
+      const oi = nx ? iOut : ii;
+      const oj = ny ? jOut : jj;
+      const ok = nz ? kOut : kk;
+      if (isActive(active,ii,jj,kk) && !isActive(active,oi,oj,ok)) return true;
+    }
+  }
+  return false;
+}
+
+function getPreviewEdges(active) {
+  return EDGES.filter(e => isEdgeVisible(e, active, previewFaceVisible));
+}
+
+
 function loop() {
   if (dirty) { dirty = false; render(); }
   requestAnimationFrame(loop);
