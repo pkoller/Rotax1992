@@ -24,7 +24,7 @@ function setScreen(s) { screen = s; dirty = true; }
 function requestRender() { dirty = true; }
 
 // ── Geometry ──
-const PREVIEW_OX = 60,  PREVIEW_OY = 270;
+const PREVIEW_OX = 100,  PREVIEW_OY = 270;
 const PUZZLE_OX  = 430, PUZZLE_OY  = 300;
 
 // Build all 54 edges of the 2×2×2 sub-cube grid (vertices 0–2 per axis)
@@ -576,7 +576,7 @@ function drawRotaxLogo(startX, startY, S) {
 
 function drawIntro() {
   // ROTAX at top
-  drawRotaxLogo(321, 15, 6);
+  drawRotaxLogo(321, 0, 6);
 
   // Subtitle and credits
   ctx.fillStyle='#FFFF00'; ctx.font='18px Courier New'; ctx.textAlign='center';
@@ -596,6 +596,8 @@ function drawIntro() {
 }
 
 function drawDifficulty() {
+  drawRotaxLogo(321, 0, 6);
+  drawAxisDecoration(80, 490);
   ctx.fillStyle='#00FFFF'; ctx.font='22px Courier New'; ctx.textAlign='center';
   ctx.fillText('SCHWIERIGKEITSGRAD', 400, 130);
   ctx.fillStyle='#555'; ctx.font='12px Courier New';
@@ -618,11 +620,8 @@ function drawDifficulty() {
 }
 
 function drawGame() {
-  // ROTAX header at top
-  drawRotaxLogo(358, 2, 3);
-
-  // Axis decoration (dashed line)
-  drawAxisDecoration(28, 495);
+  drawRotaxLogo(321, 0, 6);
+  drawAxisDecoration(80, 495);
 
 
   // Difficulty label
@@ -682,8 +681,8 @@ const COMPLETE_BTNS=[
 function drawComplete() {
   ctx.fillStyle='#000'; ctx.fillRect(0,0,800,520);
 
-  drawRotaxLogo(321, 4, 3);
-  drawAxisDecoration(28, 495);
+  drawRotaxLogo(321, 0, 6);
+  drawAxisDecoration(80, 495);
 
   ctx.strokeStyle='#004400'; ctx.lineWidth=1;
   for(const e of EDGES){
