@@ -23,6 +23,34 @@ let dirty = true;
 function setScreen(s) { screen = s; dirty = true; }
 function requestRender() { dirty = true; }
 
+// ── Geometry ──
+const PREVIEW_OX = 60,  PREVIEW_OY = 420;
+const PUZZLE_OX  = 430, PUZZLE_OY  = 420;
+
+// Build all 54 edges of the 2×2×2 sub-cube grid (vertices 0–2 per axis)
+const EDGES = [];
+for (let j=0;j<=2;j++) for (let k=0;k<=2;k++) for (let x=0;x<=1;x++)
+  EDGES.push({x1:x,  y1:j,  z1:k,  x2:x+1,y2:j,  z2:k  }); // X-direction
+for (let i=0;i<=2;i++) for (let k=0;k<=2;k++) for (let y=0;y<=1;y++)
+  EDGES.push({x1:i,  y1:y,  z1:k,  x2:i,  y2:y+1,z2:k  }); // Y-direction
+for (let i=0;i<=2;i++) for (let j=0;j<=2;j++) for (let z=0;z<=1;z++)
+  EDGES.push({x1:i,  y1:j,  z1:z,  x2:i,  y2:j,  z2:z+1}); // Z-direction
+
+console.assert(EDGES.length === 54, 'EDGES must be 54, got ' + EDGES.length);
+
+function project(x, y, z, ox, oy) {
+  return { sx: ox + 100*x + 25*y,  sy: oy + 25*y - 100*z };
+}
+
+function rotateZ(x, y, z) {
+  // 90° around Z: (X,Y,Z) → (2−Y, X, Z)
+  return { x: 2-y, y: x, z: z };
+}
+
+function isActive(active, i, j, k) {
+  return i>=0&&i<2&&j>=0&&j<2&&k>=0&&k<2 && !!active[i][j][k];
+}
+
 function loop() {
   if (dirty) { dirty = false; render(); }
   requestAnimationFrame(loop);
