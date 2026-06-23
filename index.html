@@ -302,6 +302,22 @@ function isValidPuzzle(a,difficulty){
   return false;
 }
 
+// ── Game State ──
+let currentDifficulty = 'medium';
+let activeState       = makeActive();
+let puzzleEdgeCache   = []; // [{edge, seg, traced}]
+let totalVisible      = 0;
+let tracedCount       = 0;
+
+function startNewPuzzle(difficulty) {
+  currentDifficulty = difficulty;
+  activeState       = generatePuzzle(difficulty);
+  puzzleEdgeCache   = getPuzzleEdges(activeState); // already has traced:false from getPuzzleEdges
+  totalVisible      = puzzleEdgeCache.length;
+  tracedCount       = 0;
+  setScreen(STATE.PLAYING);
+}
+
 function loop() {
   if (dirty) { dirty = false; render(); }
   requestAnimationFrame(loop);
@@ -321,7 +337,58 @@ function render() {
 // placeholders — filled in by later tasks
 function drawIntro()      { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('INTRO',20,40); }
 function drawDifficulty() { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('DIFFICULTY',20,40); }
-function drawGame()       { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('GAME',20,40); }
+
+function drawGame() {
+  // Panel divider
+  ctx.strokeStyle='#222'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(400,55); ctx.lineTo(400,495); ctx.stroke();
+
+  // Panel labels
+  ctx.fillStyle='#00FFFF'; ctx.font='13px Courier New';
+  ctx.fillText('URKÖRPER', 80, 45);
+  ctx.fillText('NACHZEICHNEN', 470, 45);
+
+  // Difficulty label
+  ctx.fillStyle='#888'; ctx.font='11px Courier New';
+  ctx.fillText(currentDifficulty.toUpperCase(), 370, 510);
+
+  // ── Preview panel (Urkörper) ──
+  ctx.strokeStyle='#00AA00'; ctx.lineWidth=3;
+  for(const e of getPreviewEdges(activeState)){
+    const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
+    const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
+    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+  }
+
+  // ── Puzzle panel (Dünnkörper) — full wireframe dim ──
+  ctx.strokeStyle='#553300'; ctx.lineWidth=1;
+  for(const e of EDGES){
+    const r1=rotateZ(e.x1,e.y1,e.z1), r2=rotateZ(e.x2,e.y2,e.z2);
+    const p1=project(r1.x,r1.y,r1.z,PUZZLE_OX,PUZZLE_OY);
+    const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
+    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+  }
+
+  // Traced edges (bright green thick)
+  ctx.strokeStyle='#00FF00'; ctx.lineWidth=3;
+  for(const pe of puzzleEdgeCache){
+    if(!pe.traced) continue;
+    const s=pe.seg;
+    ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
+  }
+
+  drawScoreBox();
+}
+
+function drawScoreBox() {
+  ctx.strokeStyle='#FFFF00'; ctx.lineWidth=1;
+  ctx.strokeRect(32,458,110,42);
+  ctx.fillStyle='#FFFF00'; ctx.font='bold 26px Courier New';
+  ctx.fillText(String(tracedCount).padStart(2,' '), 50,487);
+  ctx.fillStyle='#888'; ctx.font='13px Courier New';
+  ctx.fillText('/ '+totalVisible, 88, 487);
+}
+
 function drawComplete()   { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('COMPLETE',20,40); }
 
 requestAnimationFrame(loop);
