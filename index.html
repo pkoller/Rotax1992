@@ -209,6 +209,99 @@ function getPuzzleEdges(active) {
     .filter(pe => pe.seg !== null);
 }
 
+// ── Puzzle Generator ──
+function makeActive() {
+  return [[[false,false],[false,false]],[[false,false],[false,false]]];
+}
+
+function countActive(a) {
+  let n=0;
+  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++) if(a[i][j][k]) n++;
+  return n;
+}
+
+const FACE_DIRS=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+
+function isConnected(a) {
+  let start=null;
+  outer: for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++)
+    if(a[i][j][k]){ start=[i,j,k]; break outer; }
+  if(!start) return true;
+  const visited=new Set([start.join()]);
+  const q=[start];
+  while(q.length){
+    const [i,j,k]=q.shift();
+    for(const [di,dj,dk] of FACE_DIRS){
+      const ni=i+di,nj=j+dj,nk=k+dk, key=`${ni},${nj},${nk}`;
+      if(ni>=0&&ni<2&&nj>=0&&nj<2&&nk>=0&&nk<2&&!visited.has(key)&&a[ni][nj][nk])
+        { visited.add(key); q.push([ni,nj,nk]); }
+    }
+  }
+  return visited.size===countActive(a);
+}
+
+function shuffledCubes() {
+  const all=[];
+  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++) all.push([i,j,k]);
+  for(let i=all.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [all[i],all[j]]=[all[j],all[i]];
+  }
+  return all;
+}
+
+// Grow a connected active set to `count` cubes by repeatedly picking a random exposed neighbor
+function growActive(count) {
+  const a=makeActive();
+  const seed=shuffledCubes()[0];
+  a[seed[0]][seed[1]][seed[2]]=true;
+  while(countActive(a)<count){
+    const candidates=[];
+    for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++){
+      if(!a[i][j][k]) continue;
+      for(const [di,dj,dk] of FACE_DIRS){
+        const ni=i+di,nj=j+dj,nk=k+dk;
+        if(ni>=0&&ni<2&&nj>=0&&nj<2&&nk>=0&&nk<2&&!a[ni][nj][nk])
+          candidates.push([ni,nj,nk]);
+      }
+    }
+    if(!candidates.length) break;
+    const p=candidates[Math.floor(Math.random()*candidates.length)];
+    a[p[0]][p[1]][p[2]]=true;
+  }
+  return a;
+}
+
+function generatePuzzle(difficulty) {
+  for(let attempt=0;attempt<200;attempt++){
+    let a;
+    if(difficulty==='easy'){
+      const count=Math.random()<0.35 ? 1 : 2;
+      a=growActive(count);
+    } else if(difficulty==='medium'){
+      const count=3+Math.floor(Math.random()*5); // 3–7
+      a=growActive(count);
+    } else { // hard: 3–6, any connectivity
+      const count=3+Math.floor(Math.random()*4); // 3–6
+      a=makeActive();
+      const cubes=shuffledCubes();
+      for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
+    }
+    if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) return a;
+  }
+  // fallback: single cube
+  const a=makeActive(); a[0][0][0]=true; return a;
+}
+
+function isValidPuzzle(a,difficulty){
+  const n=countActive(a);
+  if(n===0) return false;
+  if(difficulty==='easy')   return n>=1&&n<=2&&isConnected(a);
+  if(difficulty==='medium') return n>=3&&n<=7&&isConnected(a);
+  if(difficulty==='hard')   return n>=3&&n<=6;
+  return false;
+}
+
 function loop() {
   if (dirty) { dirty = false; render(); }
   requestAnimationFrame(loop);
