@@ -302,6 +302,14 @@ function isValidPuzzle(a,difficulty){
   return false;
 }
 
+// ── Difficulty Select ──
+const DIFF_BTNS = [
+  { label:'[ LEICHT ]', sub:'1–2 WÜRFEL  |  VERBUNDEN', diff:'easy',   x:260,y:200,w:280,h:48 },
+  { label:'[ MITTEL ]', sub:'3–7 WÜRFEL  |  VERBUNDEN', diff:'medium', x:260,y:278,w:280,h:48 },
+  { label:'[ SCHWER ]', sub:'3–6 WÜRFEL  |  BELIEBIG',  diff:'hard',   x:260,y:356,w:280,h:48 },
+];
+let hoveredDiff = null;
+
 // ── Input ──
 let blinkOn = true;
 setInterval(() => { blinkOn=!blinkOn; if(screen===STATE.INTRO) requestRender(); }, 500);
@@ -309,6 +317,15 @@ setInterval(() => { blinkOn=!blinkOn; if(screen===STATE.INTRO) requestRender(); 
 document.addEventListener('keydown', e => {
   if(screen===STATE.INTRO){ setScreen(STATE.DIFFICULTY); return; }
   // further cases added in later tasks
+});
+
+canvas.addEventListener('mousemove', e => {
+  if(screen!==STATE.DIFFICULTY) return;
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const prev=hoveredDiff;
+  hoveredDiff=DIFF_BTNS.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h)||null;
+  if(hoveredDiff!==prev) requestRender();
 });
 
 canvas.addEventListener('click', e => {
@@ -319,6 +336,14 @@ canvas.addEventListener('click', e => {
 
 function handleClick(mx,my) {
   if(screen===STATE.INTRO){ setScreen(STATE.DIFFICULTY); return; }
+  if(screen===STATE.DIFFICULTY){
+    for(const btn of DIFF_BTNS){
+      if(mx>=btn.x&&mx<=btn.x+btn.w&&my>=btn.y&&my<=btn.y+btn.h){
+        startNewPuzzle(btn.diff); return;
+      }
+    }
+    return;
+  }
   // further cases added in later tasks
 }
 
@@ -397,7 +422,27 @@ function drawIntro() {
   ctx.textAlign='left';
 }
 
-function drawDifficulty() { ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.fillText('DIFFICULTY',20,40); }
+function drawDifficulty() {
+  ctx.fillStyle='#00FFFF'; ctx.font='22px Courier New'; ctx.textAlign='center';
+  ctx.fillText('SCHWIERIGKEITSGRAD', 400, 130);
+  ctx.fillStyle='#555'; ctx.font='12px Courier New';
+  ctx.fillText('WÄHLE EINE STUFE', 400, 158);
+
+  for(const btn of DIFF_BTNS){
+    const hot=(btn===hoveredDiff);
+    ctx.fillStyle=hot?'#FFFF00':'#000';
+    ctx.fillRect(btn.x,btn.y,btn.w,btn.h);
+    ctx.strokeStyle='#FFFF00'; ctx.lineWidth=1;
+    ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
+    ctx.fillStyle=hot?'#000':'#FFFF00';
+    ctx.font='20px Courier New'; ctx.textAlign='center';
+    ctx.fillText(btn.label, btn.x+btn.w/2, btn.y+30);
+    ctx.fillStyle=hot?'#000':'#888';
+    ctx.font='11px Courier New';
+    ctx.fillText(btn.sub, btn.x+btn.w/2, btn.y+44);
+  }
+  ctx.textAlign='left';
+}
 
 function drawGame() {
   // Panel divider
