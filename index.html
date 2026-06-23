@@ -149,13 +149,13 @@ function buildOccluders(active) {
     if(!isActive(active,i-1,j,k))
       occ.push({ poly: faceScreenPoly([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]]),
                  axis:'x', coord:i, above:false });
-    // −Y face at Y=j
+    // −Y face at Y=j (reversed winding so clipSegPoly inward normals are correct)
     if(!isActive(active,i,j-1,k))
-      occ.push({ poly: faceScreenPoly([[i,j,k],[i+1,j,k],[i+1,j,k+1],[i,j,k+1]]),
+      occ.push({ poly: faceScreenPoly([[i,j,k+1],[i+1,j,k+1],[i+1,j,k],[i,j,k]]),
                  axis:'y', coord:j, above:false });
-    // +Z face at Z=k+1
+    // +Z face at Z=k+1 (reversed winding)
     if(!isActive(active,i,j,k+1))
-      occ.push({ poly: faceScreenPoly([[i,j,k+1],[i+1,j,k+1],[i+1,j+1,k+1],[i,j+1,k+1]]),
+      occ.push({ poly: faceScreenPoly([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]]),
                  axis:'z', coord:k+1, above:true });
   }
   return occ;
@@ -531,40 +531,6 @@ function drawIntro() {
   ctx.textAlign='left';
 }
 
-// Painter's-algorithm face fill for the preview panel
-// Fills visible (-X, +Y, +Z) exposed faces with near-black to occlude hidden back-edges
-function drawPreviewFaces() {
-  const faces=[];
-  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++){
-    if(!activeState[i][j][k]) continue;
-    // -X face: normal (-1,0,0), previewFaceVisible = 1 > 0
-    if(!isActive(activeState,i-1,j,k)){
-      const d = -i + 4*(j+0.5) + (k+0.5);
-      faces.push({pts:[[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]], color:'#001100', depth:d, ox:PREVIEW_OX, oy:PREVIEW_OY});
-    }
-    // +Y face: normal (0,+1,0), previewFaceVisible = 4 > 0
-    if(!isActive(activeState,i,j+1,k)){
-      const d = -(i+0.5) + 4*(j+1) + (k+0.5);
-      faces.push({pts:[[i,j+1,k],[i+1,j+1,k],[i+1,j+1,k+1],[i,j+1,k+1]], color:'#002200', depth:d, ox:PREVIEW_OX, oy:PREVIEW_OY});
-    }
-    // +Z face: normal (0,0,+1), previewFaceVisible = 1 > 0
-    if(!isActive(activeState,i,j,k+1)){
-      const d = -(i+0.5) + 4*(j+0.5) + (k+1);
-      faces.push({pts:[[i,j,k+1],[i+1,j,k+1],[i+1,j+1,k+1],[i,j+1,k+1]], color:'#001800', depth:d, ox:PREVIEW_OX, oy:PREVIEW_OY});
-    }
-  }
-  faces.sort((a,b)=>a.depth-b.depth); // ascending = far first
-  for(const f of faces){
-    ctx.fillStyle=f.color;
-    ctx.beginPath();
-    f.pts.forEach(([x,y,z],idx)=>{
-      const p=project(x,y,z,f.ox,f.oy);
-      idx===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy);
-    });
-    ctx.closePath(); ctx.fill();
-  }
-}
-
 function drawDifficulty() {
   ctx.fillStyle='#00FFFF'; ctx.font='22px Courier New'; ctx.textAlign='center';
   ctx.fillText('SCHWIERIGKEITSGRAD', 400, 130);
@@ -607,9 +573,7 @@ function drawGame() {
     const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
-  // 2. Fill visible faces (painter's algorithm) to occlude hidden back-edges
-  drawPreviewFaces();
-  // 3. Visible edges thick green on top
+  // 2. Visible edges thick green on top
   ctx.strokeStyle='#00AA00'; ctx.lineWidth=3;
   for(const e of getPreviewEdges(activeState)){
     const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
@@ -625,7 +589,6 @@ function drawGame() {
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
-
   // Traced edges (bright green thick)
   ctx.strokeStyle='#00FF00'; ctx.lineWidth=3;
   for(const pe of puzzleEdgeCache){
@@ -648,30 +611,6 @@ function drawScoreBox() {
 }
 
 // ── Completion ──
-function fillSolutionFaces() {
-  const faces=[];
-  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++){
-    if(!activeState[i][j][k]) continue;
-    const depth=-4*(i+0.5)-(j+0.5)+(k+0.5); // far-first for viewer at (−4,−1,1)
-    if(!isActive(activeState,i-1,j,k))
-      faces.push({ pts:[[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]], color:'#002200', depth });
-    if(!isActive(activeState,i,j-1,k))
-      faces.push({ pts:[[i,j,k],[i+1,j,k],[i+1,j,k+1],[i,j,k+1]], color:'#003300', depth });
-    if(!isActive(activeState,i,j,k+1))
-      faces.push({ pts:[[i,j,k+1],[i+1,j,k+1],[i+1,j+1,k+1],[i,j+1,k+1]], color:'#004400', depth });
-  }
-  faces.sort((a,b)=>a.depth-b.depth);
-  for(const f of faces){
-    ctx.fillStyle=f.color;
-    ctx.beginPath();
-    f.pts.forEach(([x,y,z],idx)=>{
-      const r=rotateZ(x,y,z), p=project(r.x,r.y,r.z,PUZZLE_OX,PUZZLE_OY);
-      idx===0 ? ctx.moveTo(p.sx,p.sy) : ctx.lineTo(p.sx,p.sy);
-    });
-    ctx.closePath(); ctx.fill();
-  }
-}
-
 const COMPLETE_BTNS=[
   {label:'[ WEITER ]', action:'next', x:430,y:462,w:140,h:36},
   {label:'[ MENÜ  ]', action:'menu', x:585,y:462,w:140,h:36},
@@ -689,8 +628,6 @@ function drawComplete() {
     const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
-  drawPreviewFaces();
-
   ctx.strokeStyle='#00AA00'; ctx.lineWidth=3;
   for(const e of getPreviewEdges(activeState)){
     const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
@@ -705,8 +642,6 @@ function drawComplete() {
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
-
-  fillSolutionFaces();
 
   ctx.strokeStyle='#00FF00'; ctx.lineWidth=3;
   for(const pe of puzzleEdgeCache){
