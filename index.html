@@ -344,6 +344,7 @@ function handleClick(mx,my) {
     }
     return;
   }
+  if(screen===STATE.PLAYING){ handleGameClick(mx,my); return; }
   // further cases added in later tasks
 }
 
@@ -353,6 +354,56 @@ let activeState       = makeActive();
 let puzzleEdgeCache   = []; // [{edge, seg, traced}]
 let totalVisible      = 0;
 let tracedCount       = 0;
+
+// ── Audio ──
+const _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+function beep(freq=1000, ms=100, wave='square') {
+  const osc=_audioCtx.createOscillator(), gain=_audioCtx.createGain();
+  osc.connect(gain); gain.connect(_audioCtx.destination);
+  osc.type=wave; osc.frequency.value=freq;
+  gain.gain.setValueAtTime(0.08, _audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime+ms/1000);
+  osc.start(); osc.stop(_audioCtx.currentTime+ms/1000);
+}
+
+function victorySound() {
+  [330,440,550,660,880].forEach((f,i)=>setTimeout(()=>beep(f,120,'square'),i*110));
+}
+
+// ── Game Interaction ──
+function ptSegDist(px,py, x1,y1, x2,y2) {
+  const dx=x2-x1, dy=y2-y1, lenSq=dx*dx+dy*dy;
+  if(lenSq<1e-9) return Math.hypot(px-x1,py-y1);
+  const t=Math.max(0,Math.min(1,((px-x1)*dx+(py-y1)*dy)/lenSq));
+  return Math.hypot(px-(x1+t*dx), py-(y1+t*dy));
+}
+
+const HIT_DIST=10;
+
+function handleGameClick(mx,my) {
+  // Ensure AudioContext is running (browsers require user gesture)
+  if(_audioCtx.state==='suspended') _audioCtx.resume();
+
+  let bestIdx=-1, bestD=HIT_DIST;
+  for(let i=0;i<puzzleEdgeCache.length;i++){
+    const pe=puzzleEdgeCache[i];
+    if(pe.traced) continue;
+    const s=pe.seg;
+    const d=ptSegDist(mx,my, s.sx1,s.sy1, s.sx2,s.sy2);
+    if(d<bestD){ bestD=d; bestIdx=i; }
+  }
+  if(bestIdx<0) return;
+
+  puzzleEdgeCache[bestIdx].traced=true;
+  tracedCount++;
+  beep(1000,90);
+  requestRender();
+
+  if(tracedCount===totalVisible){
+    setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); }, 350);
+  }
+}
 
 function startNewPuzzle(difficulty) {
   currentDifficulty = difficulty;
