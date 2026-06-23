@@ -108,8 +108,72 @@ function isEdgeVisible(e, active, faceVisibleFn) {
   return false;
 }
 
+function faceScreenPolyPreview(pts) {
+  return pts.map(([x,y,z]) => {
+    const p=project(x,y,z, PREVIEW_OX,PREVIEW_OY);
+    return {x:p.sx, y:p.sy};
+  });
+}
+
+function buildPreviewOccluders(active) {
+  const occ=[];
+  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++) {
+    if(!active[i][j][k]) continue;
+    if(!isActive(active,i-1,j,k))
+      occ.push({ poly: faceScreenPolyPreview([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]]),
+                 axis:'x', coord:i, above:false });
+    if(!isActive(active,i,j+1,k))
+      occ.push({ poly: faceScreenPolyPreview([[i,j+1,k],[i+1,j+1,k],[i+1,j+1,k+1],[i,j+1,k+1]]),
+                 axis:'y', coord:j+1, above:true });
+    if(!isActive(active,i,j,k+1))
+      occ.push({ poly: faceScreenPolyPreview([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]]),
+                 axis:'z', coord:k+1, above:true });
+  }
+  return occ;
+}
+
+function visiblePreviewSegment(e, occluders) {
+  const p1=project(e.x1,e.y1,e.z1, PREVIEW_OX,PREVIEW_OY);
+  const p2=project(e.x2,e.y2,e.z2, PREVIEW_OX,PREVIEW_OY);
+  const sp1={x:p1.sx,y:p1.sy}, sp2={x:p2.sx,y:p2.sy};
+  let intervals=[[0,1]];
+  for(const occ of occluders) {
+    const next=[];
+    for(const [ta,tb] of intervals) {
+      const qa={x:sp1.x+(sp2.x-sp1.x)*ta, y:sp1.y+(sp2.y-sp1.y)*ta};
+      const qb={x:sp1.x+(sp2.x-sp1.x)*tb, y:sp1.y+(sp2.y-sp1.y)*tb};
+      const clip=clipSegPoly(qa,qb,occ.poly);
+      if(!clip) { next.push([ta,tb]); continue; }
+      const tc=ta+clip[0]*(tb-ta), td=ta+clip[1]*(tb-ta);
+      const tmid=(tc+td)/2;
+      const edgeCoord =
+        occ.axis==='x' ? e.x1+(e.x2-e.x1)*tmid :
+        occ.axis==='y' ? e.y1+(e.y2-e.y1)*tmid :
+                         e.z1+(e.z2-e.z1)*tmid;
+      const inFront = occ.above ? edgeCoord >= occ.coord : edgeCoord <= occ.coord;
+      if(inFront) { next.push([ta,tb]); continue; }
+      if(tc>ta+0.01) next.push([ta,tc]);
+      if(td<tb-0.01) next.push([td,tb]);
+    }
+    intervals=next;
+    if(!intervals.length) return null;
+  }
+  if(!intervals.length) return null;
+  intervals.sort((a,b)=>(b[1]-b[0])-(a[1]-a[0]));
+  const [t0,t1]=intervals[0];
+  if(t1-t0<0.02) return null;
+  return {
+    sx1:sp1.x+(sp2.x-sp1.x)*t0, sy1:sp1.y+(sp2.y-sp1.y)*t0,
+    sx2:sp1.x+(sp2.x-sp1.x)*t1, sy2:sp1.y+(sp2.y-sp1.y)*t1
+  };
+}
+
 function getPreviewEdges(active) {
-  return EDGES.filter(e => isEdgeVisible(e, active, previewFaceVisible));
+  const occ=buildPreviewOccluders(active);
+  return EDGES
+    .filter(e => isEdgeVisible(e, active, previewFaceVisible))
+    .map(e => ({ edge:e, seg:visiblePreviewSegment(e,occ) }))
+    .filter(pe => pe.seg !== null);
 }
 
 // Clip segment p0→p1 ({x,y} screen points) against convex CCW-wound polygon.
@@ -575,10 +639,9 @@ function drawGame() {
   }
   // 2. Visible edges thick green on top
   ctx.strokeStyle='#00AA00'; ctx.lineWidth=3;
-  for(const e of getPreviewEdges(activeState)){
-    const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
-    const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
-    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+  for(const pe of getPreviewEdges(activeState)){
+    const s=pe.seg;
+    ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
   }
 
   // ── Puzzle panel (Dünnkörper) — full wireframe dim ──
@@ -629,10 +692,9 @@ function drawComplete() {
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
   ctx.strokeStyle='#00AA00'; ctx.lineWidth=3;
-  for(const e of getPreviewEdges(activeState)){
-    const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
-    const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
-    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+  for(const pe of getPreviewEdges(activeState)){
+    const s=pe.seg;
+    ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
   }
 
   ctx.strokeStyle='#004400'; ctx.lineWidth=1;
