@@ -414,8 +414,14 @@ function handleClick(mx,my) {
     }
     return;
   }
-  if(screen===STATE.PLAYING){ handleGameClick(mx,my); return; }
+  if(screen===STATE.PLAYING){
+    const b=MENU_BTN;
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ setScreen(STATE.DIFFICULTY); return; }
+    handleGameClick(mx,my); return;
+  }
   if(screen===STATE.COMPLETE){
+    const b=MENU_BTN;
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ setScreen(STATE.DIFFICULTY); return; }
     for(const btn of COMPLETE_BTNS){
       if(mx>=btn.x&&mx<=btn.x+btn.w&&my>=btn.y&&my<=btn.y+btn.h){
         if(btn.action==='next') startNewPuzzle(currentDifficulty);
@@ -661,6 +667,7 @@ function drawGame() {
 
   drawRotationArms();
   drawScoreBox();
+  drawMenuBtn();
 }
 
 function drawScoreBox() {
@@ -674,9 +681,17 @@ function drawScoreBox() {
 
 // ── Completion ──
 const COMPLETE_BTNS=[
-  {label:'[ WEITER ]', action:'next', x:430,y:462,w:140,h:36},
-  {label:'[ MENÜ  ]', action:'menu', x:585,y:462,w:140,h:36},
+  {label:'[ WEITER ]', action:'next', x:510,y:430,w:140,h:36},
 ];
+
+const MENU_BTN = {x:600, y:480, w:140, h:36};
+
+function drawMenuBtn() {
+  ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(MENU_BTN.x,MENU_BTN.y,MENU_BTN.w,MENU_BTN.h);
+  ctx.fillStyle='#B5514D'; ctx.font='15px Courier New'; ctx.textAlign='center';
+  ctx.fillText('[ MENÜ ]', MENU_BTN.x+MENU_BTN.w/2, MENU_BTN.y+23);
+  ctx.textAlign='left';
+}
 
 function drawComplete() {
   ctx.fillStyle='#000'; ctx.fillRect(0,0,800,520);
@@ -714,7 +729,7 @@ function drawComplete() {
   drawScoreBox();
 
   ctx.fillStyle='#00FF00'; ctx.font='bold 18px Courier New'; ctx.textAlign='center';
-  ctx.fillText('FERTIG!', 580, 450);
+  ctx.fillText('FERTIG!', 580, 400);
   ctx.textAlign='left';
 
   for(const btn of COMPLETE_BTNS){
@@ -723,6 +738,8 @@ function drawComplete() {
     ctx.fillText(btn.label, btn.x+btn.w/2, btn.y+23);
   }
   ctx.textAlign='left';
+
+  drawMenuBtn();
 }
 
 // ── Boot ──
