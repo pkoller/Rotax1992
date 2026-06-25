@@ -552,6 +552,7 @@ function handleGameClick(mx,my) {
     if(bestIdx>=0){
       puzzleEdgeCache[bestIdx].traced = !puzzleEdgeCache[bestIdx].traced;
       tracedCount = puzzleEdgeCache.filter(pe=>pe.traced).length;
+      beep(1000,90);
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
@@ -567,6 +568,7 @@ function handleGameClick(mx,my) {
     }
     if(wIdx>=0){
       wrongEdges[wIdx].active = !wrongEdges[wIdx].active;
+      beep(1000,90);
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
