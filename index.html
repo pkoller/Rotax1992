@@ -803,6 +803,13 @@ function drawGame() {
     const s=pe.seg;
     ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
   }
+  if (arcadeMode) {
+    for(const we of wrongEdges){
+      if(!we.active) continue;
+      const s=we.seg;
+      ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
+    }
+  }
   ctx.shadowBlur=0;
 
   // Red flicker on miss
@@ -823,7 +830,7 @@ function drawGame() {
   }
 
   drawRotationArms();
-  drawScoreBox();
+  if (!arcadeMode) drawScoreBox();
   drawMenuBtn();
 }
 
@@ -903,10 +910,17 @@ function drawComplete() {
     const s=pe.seg;
     ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
   }
+  if (arcadeMode) {
+    for(const we of wrongEdges){
+      if(!we.active) continue;
+      const s=we.seg;
+      ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
+    }
+  }
   ctx.shadowBlur=0;
 
   drawRotationArms();
-  drawScoreBox();
+  if (!arcadeMode) drawScoreBox();
 
   ctx.fillStyle='#00FF00'; ctx.font='bold 22px Courier New'; ctx.textAlign='center';
   ctx.fillText('FERTIG!', 580, 120);
