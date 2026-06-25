@@ -453,6 +453,13 @@ function handleClick(mx,my) {
   if(mx>=sb.x&&mx<=sb.x+sb.w&&my>=sb.y&&my<=sb.y+sb.h){
     soundEnabled=!soundEnabled; requestRender(); return;
   }
+  const mb=MODE_BTN;
+  if(mx>=mb.x&&mx<=mb.x+mb.w&&my>=mb.y&&my<=mb.y+mb.h){
+    arcadeMode=!arcadeMode;
+    if(screen===STATE.PLAYING||screen===STATE.COMPLETE) startNewPuzzle(currentDifficulty);
+    else requestRender();
+    return;
+  }
   if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
   if(screen===STATE.DIFFICULTY){
     for(const btn of DIFF_BTNS){
@@ -598,6 +605,7 @@ function render() {
   else if (screen === STATE.PLAYING)    drawGame();
   else if (screen === STATE.COMPLETE)   drawComplete();
   drawSoundBtn();
+  drawModeBtn();
 }
 
 function drawRotationArms() {
@@ -793,13 +801,24 @@ const COMPLETE_BTNS=[
 
 const MENU_BTN = {x:600, y:480, w:140, h:36};
 const SOUND_BTN = {x:12, y:12, w:100, h:28};
+const MODE_BTN  = {x:12, y:44, w:100, h:28};
+let arcadeMode  = false;
 
 function drawSoundBtn() {
   const b = SOUND_BTN;
-  ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
-  ctx.fillStyle = '#444'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
   ctx.fillText(soundEnabled ? '[ SND ON ]' : '[ SND OFF]', b.x + b.w/2, b.y + 19);
+  ctx.textAlign = 'left';
+}
+
+function drawModeBtn() {
+  const b = MODE_BTN;
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText(arcadeMode ? '[ ARC    ]' : '[ TRN    ]', b.x + b.w/2, b.y + 19);
   ctx.textAlign = 'left';
 }
 
