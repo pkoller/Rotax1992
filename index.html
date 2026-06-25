@@ -421,7 +421,7 @@ let blinkOn = true;
 setInterval(() => { blinkOn=!blinkOn; if(screen===STATE.INTRO) requestRender(); }, 500);
 
 document.addEventListener('keydown', e => {
-  if(screen===STATE.INTRO){ setScreen(STATE.DIFFICULTY); return; }
+  if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
   // further cases added in later tasks
 });
 
@@ -449,25 +449,30 @@ canvas.addEventListener('touchstart', e => {
 }, {passive:false});
 
 function handleClick(mx,my) {
-  if(screen===STATE.INTRO){ setScreen(STATE.DIFFICULTY); return; }
+  const sb=SOUND_BTN;
+  if(mx>=sb.x&&mx<=sb.x+sb.w&&my>=sb.y&&my<=sb.y+sb.h){
+    soundEnabled=!soundEnabled; requestRender(); return;
+  }
+  if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
   if(screen===STATE.DIFFICULTY){
     for(const btn of DIFF_BTNS){
       if(mx>=btn.x&&mx<=btn.x+btn.w&&my>=btn.y&&my<=btn.y+btn.h){
-        startNewPuzzle(btn.diff); return;
+        clickSound(); startNewPuzzle(btn.diff); return;
       }
     }
     return;
   }
   if(screen===STATE.PLAYING){
     const b=MENU_BTN;
-    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ setScreen(STATE.DIFFICULTY); return; }
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
     handleGameClick(mx,my); return;
   }
   if(screen===STATE.COMPLETE){
     const b=MENU_BTN;
-    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ setScreen(STATE.DIFFICULTY); return; }
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
     for(const btn of COMPLETE_BTNS){
       if(mx>=btn.x&&mx<=btn.x+btn.w&&my>=btn.y&&my<=btn.y+btn.h){
+        clickSound();
         if(btn.action==='next') startNewPuzzle(currentDifficulty);
         else                    setScreen(STATE.DIFFICULTY);
         return;
@@ -486,8 +491,10 @@ let tracedCount       = 0;
 
 // ── Audio ──
 const _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+let soundEnabled = true;
 
 function beep(freq=1000, ms=100, wave='square') {
+  if (!soundEnabled) return;
   const osc=_audioCtx.createOscillator(), gain=_audioCtx.createGain();
   osc.connect(gain); gain.connect(_audioCtx.destination);
   osc.type=wave; osc.frequency.value=freq;
@@ -503,6 +510,10 @@ function victorySound() {
 function errorSound() {
   beep(160, 180, 'sawtooth');
   setTimeout(()=>beep(120, 150, 'sawtooth'), 100);
+}
+
+function clickSound() {
+  beep(800, 40, 'square');
 }
 
 // ── Game Interaction ──
@@ -586,6 +597,7 @@ function render() {
   else if (screen === STATE.DIFFICULTY) drawDifficulty();
   else if (screen === STATE.PLAYING)    drawGame();
   else if (screen === STATE.COMPLETE)   drawComplete();
+  drawSoundBtn();
 }
 
 function drawRotationArms() {
@@ -780,6 +792,16 @@ const COMPLETE_BTNS=[
 ];
 
 const MENU_BTN = {x:600, y:480, w:140, h:36};
+const SOUND_BTN = {x:12, y:12, w:100, h:28};
+
+function drawSoundBtn() {
+  const b = SOUND_BTN;
+  ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.fillStyle = '#444'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText(soundEnabled ? '[ SND ON ]' : '[ SND OFF]', b.x + b.w/2, b.y + 19);
+  ctx.textAlign = 'left';
+}
 
 function drawMenuBtn() {
   ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(MENU_BTN.x,MENU_BTN.y,MENU_BTN.w,MENU_BTN.h);
