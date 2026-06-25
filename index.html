@@ -496,6 +496,8 @@ let puzzleEdgeCache   = []; // [{edge, seg, traced}]
 let totalVisible      = 0;
 let tracedCount       = 0;
 let wrongEdges        = []; // [{seg, active}] — arcade mode only
+const MODE_BTN  = {x:12, y:44, w:100, h:28};
+let arcadeMode  = false;
 
 // ── Audio ──
 const _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -536,6 +538,7 @@ const HIT_DIST=10;
 let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
 
 function handleGameClick(mx,my) {
+  if(screen !== STATE.PLAYING) return;
   if(_audioCtx.state==='suspended') _audioCtx.resume();
 
   if (arcadeMode) {
@@ -850,8 +853,6 @@ const COMPLETE_BTNS=[
 
 const MENU_BTN = {x:600, y:480, w:140, h:36};
 const SOUND_BTN = {x:12, y:12, w:100, h:28};
-const MODE_BTN  = {x:12, y:44, w:100, h:28};
-let arcadeMode  = false;
 
 function drawSoundBtn() {
   const b = SOUND_BTN;
