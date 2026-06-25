@@ -536,9 +536,43 @@ const HIT_DIST=10;
 let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
 
 function handleGameClick(mx,my) {
-  // Ensure AudioContext is running (browsers require user gesture)
   if(_audioCtx.state==='suspended') _audioCtx.resume();
 
+  if (arcadeMode) {
+    // Try solution edges first
+    let bestIdx=-1, bestD=HIT_DIST;
+    for(let i=0;i<puzzleEdgeCache.length;i++){
+      const s=puzzleEdgeCache[i].seg;
+      const d=ptSegDist(mx,my, s.sx1,s.sy1, s.sx2,s.sy2);
+      if(d<bestD){ bestD=d; bestIdx=i; }
+    }
+    if(bestIdx>=0){
+      puzzleEdgeCache[bestIdx].traced = !puzzleEdgeCache[bestIdx].traced;
+      tracedCount = puzzleEdgeCache.filter(pe=>pe.traced).length;
+      requestRender();
+      const allSol = puzzleEdgeCache.every(pe=>pe.traced);
+      const noWrong = wrongEdges.every(we=>!we.active);
+      if(allSol && noWrong){ setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
+      return;
+    }
+    // Try wrong edges
+    let wIdx=-1, wD=HIT_DIST;
+    for(let i=0;i<wrongEdges.length;i++){
+      const s=wrongEdges[i].seg;
+      const d=ptSegDist(mx,my, s.sx1,s.sy1, s.sx2,s.sy2);
+      if(d<wD){ wD=d; wIdx=i; }
+    }
+    if(wIdx>=0){
+      wrongEdges[wIdx].active = !wrongEdges[wIdx].active;
+      requestRender();
+      const allSol = puzzleEdgeCache.every(pe=>pe.traced);
+      const noWrong = wrongEdges.every(we=>!we.active);
+      if(allSol && noWrong){ setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
+    }
+    return;
+  }
+
+  // ── Training mode (original behavior) ──
   let bestIdx=-1, bestD=HIT_DIST;
   for(let i=0;i<puzzleEdgeCache.length;i++){
     const pe=puzzleEdgeCache[i];
@@ -565,13 +599,11 @@ function handleGameClick(mx,my) {
     }
     return;
   }
-
   missFlash=null;
   puzzleEdgeCache[bestIdx].traced=true;
   tracedCount++;
   beep(1000,90);
   requestRender();
-
   if(tracedCount===totalVisible){
     setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); }, 350);
   }
