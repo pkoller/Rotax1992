@@ -5,16 +5,29 @@
 <title>ROTAX — Körper-Nachzeichner</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#000; display:flex; justify-content:center; align-items:center; height:100vh; }
-  canvas { display:block; cursor:crosshair; image-rendering:pixelated; }
+  body { background:#000; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
+  canvas { display:block; cursor:crosshair; touch-action:none; }
 </style>
 </head>
 <body>
-<canvas id="c" width="800" height="520"></canvas>
+<canvas id="c" width="800" height="530"></canvas>
 <script>
 'use strict';
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+
+let gameScale = 1;
+
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  gameScale = Math.min(window.innerWidth / 800, window.innerHeight / 530);
+  canvas.width  = Math.round(800 * gameScale * dpr);
+  canvas.height = Math.round(530 * gameScale * dpr);
+  canvas.style.width  = Math.round(800 * gameScale) + 'px';
+  canvas.style.height = Math.round(530 * gameScale) + 'px';
+  dirty = true;
+}
+window.addEventListener('resize', resizeCanvas);
 
 const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3 });
 let screen = STATE.INTRO;
@@ -29,8 +42,8 @@ function setScreen(s) { screen = s; dirty = true; }
 function requestRender() { dirty = true; }
 
 // ── Geometry ──
-const PREVIEW_OX = 100,  PREVIEW_OY = 270;
-const PUZZLE_OX  = 430, PUZZLE_OY  = 300;
+const PREVIEW_OX = 100,  PREVIEW_OY = 320;
+const PUZZLE_OX  = 430, PUZZLE_OY  = 350;
 
 // Build all edges of a G×G×G sub-cube grid (vertices 0–G per axis)
 function buildEdges(g) {
@@ -415,7 +428,7 @@ document.addEventListener('keydown', e => {
 canvas.addEventListener('mousemove', e => {
   if(screen!==STATE.DIFFICULTY) return;
   const rect=canvas.getBoundingClientRect();
-  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const mx=(e.clientX-rect.left)/gameScale, my=(e.clientY-rect.top)/gameScale;
   const prev=hoveredDiff;
   hoveredDiff=DIFF_BTNS.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h)||null;
   if(hoveredDiff!==prev) requestRender();
@@ -423,9 +436,17 @@ canvas.addEventListener('mousemove', e => {
 
 canvas.addEventListener('click', e => {
   const rect=canvas.getBoundingClientRect();
-  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const mx=(e.clientX-rect.left)/gameScale, my=(e.clientY-rect.top)/gameScale;
   handleClick(mx,my);
 });
+
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const rect=canvas.getBoundingClientRect();
+  const t=e.changedTouches[0];
+  const mx=(t.clientX-rect.left)/gameScale, my=(t.clientY-rect.top)/gameScale;
+  handleClick(mx,my);
+}, {passive:false});
 
 function handleClick(mx,my) {
   if(screen===STATE.INTRO){ setScreen(STATE.DIFFICULTY); return; }
@@ -531,8 +552,10 @@ function loop() {
 }
 
 function render() {
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(gameScale * dpr, 0, 0, gameScale * dpr, 0, 0);
   ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, 800, 520);
+  ctx.fillRect(0, 0, 800, 530);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   if      (screen === STATE.INTRO)      drawIntro();
@@ -609,7 +632,7 @@ function drawRotaxLogo(startX, startY, S) {
 
 function drawIntro() {
   // ROTAX at top
-  drawRotaxLogo(321, 0, 6);
+  drawRotaxLogo(321, 20, 6);
 
   // Subtitle and credits
   ctx.fillStyle='#FFFF00'; ctx.font='18px Courier New'; ctx.textAlign='center';
@@ -629,7 +652,7 @@ function drawIntro() {
 }
 
 function drawDifficulty() {
-  drawRotaxLogo(321, 0, 6);
+  drawRotaxLogo(321, 20, 6);
   drawAxisDecoration(80, 490);
   ctx.fillStyle='#00FFFF'; ctx.font='22px Courier New'; ctx.textAlign='center';
   ctx.fillText('SCHWIERIGKEITSGRAD', 400, 120);
@@ -654,13 +677,14 @@ function drawDifficulty() {
 }
 
 function drawGame() {
-  drawRotaxLogo(321, 0, 6);
+  drawRotaxLogo(321, 20, 6);
   drawAxisDecoration(80, 495);
 
 
   // Difficulty label
-  ctx.fillStyle='#888'; ctx.font='11px Courier New';
-  ctx.fillText(currentDifficulty.toUpperCase(), 370, 510);
+  ctx.fillStyle='#888'; ctx.font='11px Courier New'; ctx.textAlign='center';
+  ctx.fillText(currentDifficulty.toUpperCase(), 400, 510);
+  ctx.textAlign='left';
 
   // ── Preview panel (Urkörper) ──
   // 1. Faint full wireframe (all edges in preview coords)
@@ -724,9 +748,9 @@ function drawMenuBtn() {
 }
 
 function drawComplete() {
-  ctx.fillStyle='#000'; ctx.fillRect(0,0,800,520);
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,800,530);
 
-  drawRotaxLogo(321, 0, 6);
+  drawRotaxLogo(321, 20, 6);
   drawAxisDecoration(80, 495);
 
   ctx.strokeStyle='#004400'; ctx.lineWidth=1;
@@ -775,6 +799,7 @@ function drawComplete() {
 }
 
 // ── Boot ──
+resizeCanvas();
 setScreen(STATE.INTRO);
 loop();
 </script>
