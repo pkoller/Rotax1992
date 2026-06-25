@@ -20,6 +20,11 @@ const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3 });
 let screen = STATE.INTRO;
 let dirty = true;
 
+// Grid size: 2 for leicht/mittel/schwer (2×2×2 cubes), 3 for wahnsinn (3×3×3 cubes)
+let G = 2;
+// Projection scale: 100 for G=2, 200/3 for G=3 — keeps the cube the same visual footprint
+let PROJ_S = 100;
+
 function setScreen(s) { screen = s; dirty = true; }
 function requestRender() { dirty = true; }
 
@@ -27,28 +32,37 @@ function requestRender() { dirty = true; }
 const PREVIEW_OX = 100,  PREVIEW_OY = 270;
 const PUZZLE_OX  = 430, PUZZLE_OY  = 300;
 
-// Build all 54 edges of the 2×2×2 sub-cube grid (vertices 0–2 per axis)
-const EDGES = [];
-for (let j=0;j<=2;j++) for (let k=0;k<=2;k++) for (let x=0;x<=1;x++)
-  EDGES.push({x1:x,  y1:j,  z1:k,  x2:x+1,y2:j,  z2:k  }); // X-direction
-for (let i=0;i<=2;i++) for (let k=0;k<=2;k++) for (let y=0;y<=1;y++)
-  EDGES.push({x1:i,  y1:y,  z1:k,  x2:i,  y2:y+1,z2:k  }); // Y-direction
-for (let i=0;i<=2;i++) for (let j=0;j<=2;j++) for (let z=0;z<=1;z++)
-  EDGES.push({x1:i,  y1:j,  z1:z,  x2:i,  y2:j,  z2:z+1}); // Z-direction
+// Build all edges of a G×G×G sub-cube grid (vertices 0–G per axis)
+function buildEdges(g) {
+  const edges = [];
+  for (let j=0;j<=g;j++) for (let k=0;k<=g;k++) for (let x=0;x<g;x++)
+    edges.push({x1:x,  y1:j,  z1:k,  x2:x+1,y2:j,  z2:k  }); // X-direction
+  for (let i=0;i<=g;i++) for (let k=0;k<=g;k++) for (let y=0;y<g;y++)
+    edges.push({x1:i,  y1:y,  z1:k,  x2:i,  y2:y+1,z2:k  }); // Y-direction
+  for (let i=0;i<=g;i++) for (let j=0;j<=g;j++) for (let z=0;z<g;z++)
+    edges.push({x1:i,  y1:j,  z1:z,  x2:i,  y2:j,  z2:z+1}); // Z-direction
+  return edges;
+}
 
-console.assert(EDGES.length === 54, 'EDGES must be 54, got ' + EDGES.length);
+const EDGES_2 = buildEdges(2);
+const EDGES_3 = buildEdges(3);
+console.assert(EDGES_2.length === 54,  'EDGES_2 must be 54,  got ' + EDGES_2.length);
+console.assert(EDGES_3.length === 144, 'EDGES_3 must be 144, got ' + EDGES_3.length);
+
+function getEdges() { return G === 3 ? EDGES_3 : EDGES_2; }
 
 function project(x, y, z, ox, oy) {
-  return { sx: ox + 100*x + 25*y,  sy: oy + 25*y - 100*z };
+  const S = PROJ_S, ob = S / 4;
+  return { sx: ox + S*x + ob*y,  sy: oy + ob*y - S*z };
 }
 
 function rotateZ(x, y, z) {
-  // −90° around Z: (X,Y,Z) → (Y, 2−X, Z)
-  return { x: y, y: 2-x, z: z };
+  // −90° around Z: (X,Y,Z) → (Y, G−X, Z)
+  return { x: y, y: G-x, z: z };
 }
 
 function isActive(active, i, j, k) {
-  return i>=0&&i<2&&j>=0&&j<2&&k>=0&&k<2 && !!active[i][j][k];
+  return i>=0&&i<G&&j>=0&&j<G&&k>=0&&k<G && !!active[i][j][k];
 }
 
 // ── Visibility ──
@@ -117,7 +131,7 @@ function faceScreenPolyPreview(pts) {
 
 function buildPreviewOccluders(active) {
   const occ=[];
-  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++) {
+  for(let i=0;i<G;i++) for(let j=0;j<G;j++) for(let k=0;k<G;k++) {
     if(!active[i][j][k]) continue;
     if(!isActive(active,i-1,j,k))
       occ.push({ poly: faceScreenPolyPreview([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]]),
@@ -170,7 +184,7 @@ function visiblePreviewSegment(e, occluders) {
 
 function getPreviewEdges(active) {
   const occ=buildPreviewOccluders(active);
-  return EDGES
+  return getEdges()
     .filter(e => isEdgeVisible(e, active, previewFaceVisible))
     .map(e => ({ edge:e, seg:visiblePreviewSegment(e,occ) }))
     .filter(pe => pe.seg !== null);
@@ -207,7 +221,7 @@ function faceScreenPoly(pts) {
 // Build list of occluding face records from active cubes (puzzle view: −X,−Y,+Z faces)
 function buildOccluders(active) {
   const occ=[];
-  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++) {
+  for(let i=0;i<G;i++) for(let j=0;j<G;j++) for(let k=0;k<G;k++) {
     if(!active[i][j][k]) continue;
     // −X face at X=i (exposed toward −X viewer); edge is in-front when edgeCoord <= coord
     if(!isActive(active,i-1,j,k))
@@ -273,7 +287,7 @@ function visibleSegment(e, occluders) {
 
 function getPuzzleEdges(active) {
   const occ=buildOccluders(active);
-  return EDGES
+  return getEdges()
     .filter(e => isEdgeVisible(e, active, puzzleFaceVisible))
     .map(e => ({ edge:e, seg:visibleSegment(e,occ), traced:false }))
     .filter(pe => pe.seg !== null);
@@ -281,12 +295,14 @@ function getPuzzleEdges(active) {
 
 // ── Puzzle Generator ──
 function makeActive() {
-  return [[[false,false],[false,false]],[[false,false],[false,false]]];
+  const a=[];
+  for(let i=0;i<G;i++){a.push([]);for(let j=0;j<G;j++){a[i].push([]);for(let k=0;k<G;k++)a[i][j].push(false);}}
+  return a;
 }
 
 function countActive(a) {
   let n=0;
-  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++) if(a[i][j][k]) n++;
+  for(let i=0;i<G;i++) for(let j=0;j<G;j++) for(let k=0;k<G;k++) if(a[i][j][k]) n++;
   return n;
 }
 
@@ -294,7 +310,7 @@ const FACE_DIRS=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
 
 function isConnected(a) {
   let start=null;
-  outer: for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++)
+  outer: for(let i=0;i<G;i++) for(let j=0;j<G;j++) for(let k=0;k<G;k++)
     if(a[i][j][k]){ start=[i,j,k]; break outer; }
   if(!start) return true;
   const visited=new Set([start.join()]);
@@ -303,7 +319,7 @@ function isConnected(a) {
     const [i,j,k]=q.shift();
     for(const [di,dj,dk] of FACE_DIRS){
       const ni=i+di,nj=j+dj,nk=k+dk, key=`${ni},${nj},${nk}`;
-      if(ni>=0&&ni<2&&nj>=0&&nj<2&&nk>=0&&nk<2&&!visited.has(key)&&a[ni][nj][nk])
+      if(ni>=0&&ni<G&&nj>=0&&nj<G&&nk>=0&&nk<G&&!visited.has(key)&&a[ni][nj][nk])
         { visited.add(key); q.push([ni,nj,nk]); }
     }
   }
@@ -312,7 +328,7 @@ function isConnected(a) {
 
 function shuffledCubes() {
   const all=[];
-  for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++) all.push([i,j,k]);
+  for(let i=0;i<G;i++) for(let j=0;j<G;j++) for(let k=0;k<G;k++) all.push([i,j,k]);
   for(let i=all.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
     [all[i],all[j]]=[all[j],all[i]];
@@ -327,11 +343,11 @@ function growActive(count) {
   a[seed[0]][seed[1]][seed[2]]=true;
   while(countActive(a)<count){
     const candidates=[];
-    for(let i=0;i<2;i++) for(let j=0;j<2;j++) for(let k=0;k<2;k++){
+    for(let i=0;i<G;i++) for(let j=0;j<G;j++) for(let k=0;k<G;k++){
       if(!a[i][j][k]) continue;
       for(const [di,dj,dk] of FACE_DIRS){
         const ni=i+di,nj=j+dj,nk=k+dk;
-        if(ni>=0&&ni<2&&nj>=0&&nj<2&&nk>=0&&nk<2&&!a[ni][nj][nk])
+        if(ni>=0&&ni<G&&nj>=0&&nj<G&&nk>=0&&nk<G&&!a[ni][nj][nk])
           candidates.push([ni,nj,nk]);
       }
     }
@@ -351,8 +367,13 @@ function generatePuzzle(difficulty) {
     } else if(difficulty==='medium'){
       const count=3+Math.floor(Math.random()*5); // 3–7
       a=growActive(count);
-    } else { // hard: 3–6, any connectivity
+    } else if(difficulty==='hard') { // hard: 3–6, any connectivity
       const count=3+Math.floor(Math.random()*4); // 3–6
+      a=makeActive();
+      const cubes=shuffledCubes();
+      for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
+    } else { // wahnsinn: 3×3×3, 5–18 cubes, fully random
+      const count=5+Math.floor(Math.random()*14); // 5–18
       a=makeActive();
       const cubes=shuffledCubes();
       for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
@@ -366,17 +387,19 @@ function generatePuzzle(difficulty) {
 function isValidPuzzle(a,difficulty){
   const n=countActive(a);
   if(n===0) return false;
-  if(difficulty==='easy')   return n>=1&&n<=2&&isConnected(a);
-  if(difficulty==='medium') return n>=3&&n<=7&&isConnected(a);
-  if(difficulty==='hard')   return n>=3&&n<=6;
+  if(difficulty==='easy')     return n>=1&&n<=2&&isConnected(a);
+  if(difficulty==='medium')   return n>=3&&n<=7&&isConnected(a);
+  if(difficulty==='hard')     return n>=3&&n<=6;
+  if(difficulty==='wahnsinn') return n>=5&&n<=18;
   return false;
 }
 
 // ── Difficulty Select ──
 const DIFF_BTNS = [
-  { label:'[ LEICHT ]', sub:'1–2 WÜRFEL  |  VERBUNDEN', diff:'easy',   x:260,y:200,w:280,h:48 },
-  { label:'[ MITTEL ]', sub:'3–7 WÜRFEL  |  VERBUNDEN', diff:'medium', x:260,y:278,w:280,h:48 },
-  { label:'[ SCHWER ]', sub:'3–6 WÜRFEL  |  BELIEBIG',  diff:'hard',   x:260,y:356,w:280,h:48 },
+  { label:'[ LEICHT ]',   sub:'1–2 WÜRFEL  |  VERBUNDEN',    diff:'easy',     x:260,y:178,w:280,h:48 },
+  { label:'[ MITTEL ]',   sub:'3–7 WÜRFEL  |  VERBUNDEN',    diff:'medium',   x:260,y:248,w:280,h:48 },
+  { label:'[ SCHWER ]',   sub:'3–6 WÜRFEL  |  BELIEBIG',     diff:'hard',     x:260,y:318,w:280,h:48 },
+  { label:'[ WAHNSINN ]', sub:'3×3×3 GITTER  |  ZUFÄLLIG',  diff:'wahnsinn', x:260,y:388,w:280,h:48, danger:true },
 ];
 let hoveredDiff = null;
 
@@ -492,8 +515,11 @@ function handleGameClick(mx,my) {
 
 function startNewPuzzle(difficulty) {
   currentDifficulty = difficulty;
+  // Set grid size and projection scale for the chosen difficulty
+  G      = difficulty === 'wahnsinn' ? 3 : 2;
+  PROJ_S = 200 / G; // 100 for 2×2×2, ~66.7 for 3×3×3 — same visual footprint
   activeState       = generatePuzzle(difficulty);
-  puzzleEdgeCache   = getPuzzleEdges(activeState); // already has traced:false from getPuzzleEdges
+  puzzleEdgeCache   = getPuzzleEdges(activeState);
   totalVisible      = puzzleEdgeCache.length;
   tracedCount       = 0;
   setScreen(STATE.PLAYING);
@@ -516,10 +542,10 @@ function render() {
 }
 
 function drawRotationArms() {
-  // Red arm endpoint: right/back/top corner of Urkörper = (2,2,2)
-  const pUR = project(2, 0, 2, PREVIEW_OX, PREVIEW_OY);
-  // Blue arm endpoint: left/back/top corner of Dünnkörper — original (0,0,2) → rotated (0,2,2)
-  const rDN = rotateZ(2, 0, 2);
+  // Red arm endpoint: far corner of preview grid = (G,0,G)
+  const pUR = project(G, 0, G, PREVIEW_OX, PREVIEW_OY);
+  // Blue arm endpoint: far corner of puzzle grid after rotation
+  const rDN = rotateZ(G, 0, G);
   const pDN = project(rDN.x, rDN.y, rDN.z, PUZZLE_OX, PUZZLE_OY);
 
   // Junction on axis at same height as Urkörper corner → red arm is horizontal
@@ -536,10 +562,11 @@ function drawRotationArms() {
   ctx.beginPath(); ctx.moveTo(jx, jy); ctx.lineTo(pDN.sx, pDN.sy); ctx.stroke();
 
   // Green 3D arc: oblique XY sweep from oblique-Y dir (90°) to -X dir (180°)
-  const oblDir = (theta) => ({ dx: 100*Math.cos(theta) + 25*Math.sin(theta), dy: 25*Math.sin(theta) });
+  const S = PROJ_S, ob = S / 4;
+  const oblDir = (theta) => ({ dx: S*Math.cos(theta) + ob*Math.sin(theta), dy: ob*Math.sin(theta) });
   const dAngle = Math.PI / 2, uAngle = Math.PI;
   const dDir = oblDir(dAngle);
-  const arcR = 25 / Math.hypot(dDir.dx, dDir.dy);
+  const arcR = ob / Math.hypot(dDir.dx, dDir.dy);
   ctx.strokeStyle = '#3388FF'; ctx.lineWidth = 1.5;
   ctx.beginPath();
   for (let i = 0; i <= 24; i++) {
@@ -605,17 +632,18 @@ function drawDifficulty() {
   drawRotaxLogo(321, 0, 6);
   drawAxisDecoration(80, 490);
   ctx.fillStyle='#00FFFF'; ctx.font='22px Courier New'; ctx.textAlign='center';
-  ctx.fillText('SCHWIERIGKEITSGRAD', 400, 130);
+  ctx.fillText('SCHWIERIGKEITSGRAD', 400, 120);
   ctx.fillStyle='#555'; ctx.font='12px Courier New';
-  ctx.fillText('WÄHLE EINE STUFE', 400, 158);
+  ctx.fillText('WÄHLE EINE STUFE', 400, 148);
 
   for(const btn of DIFF_BTNS){
     const hot=(btn===hoveredDiff);
-    ctx.fillStyle=hot?'#FFFF00':'#000';
+    const accent = btn.danger ? '#FF3333' : '#FFFF00';
+    ctx.fillStyle=hot?accent:'#000';
     ctx.fillRect(btn.x,btn.y,btn.w,btn.h);
-    ctx.strokeStyle='#FFFF00'; ctx.lineWidth=1;
+    ctx.strokeStyle=accent; ctx.lineWidth=1;
     ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
-    ctx.fillStyle=hot?'#000':'#FFFF00';
+    ctx.fillStyle=hot?'#000':accent;
     ctx.font='20px Courier New'; ctx.textAlign='center';
     ctx.fillText(btn.label, btn.x+btn.w/2, btn.y+30);
     ctx.fillStyle=hot?'#000':'#888';
@@ -635,9 +663,9 @@ function drawGame() {
   ctx.fillText(currentDifficulty.toUpperCase(), 370, 510);
 
   // ── Preview panel (Urkörper) ──
-  // 1. Faint full wireframe (all 54 edges in preview coords)
+  // 1. Faint full wireframe (all edges in preview coords)
   ctx.strokeStyle='#004400'; ctx.lineWidth=1;
-  for(const e of EDGES){
+  for(const e of getEdges()){
     const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
     const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
@@ -652,7 +680,7 @@ function drawGame() {
 
   // ── Puzzle panel (Dünnkörper) — full wireframe dim ──
   ctx.strokeStyle='#004400'; ctx.lineWidth=1;
-  for(const e of EDGES){
+  for(const e of getEdges()){
     const r1=rotateZ(e.x1,e.y1,e.z1), r2=rotateZ(e.x2,e.y2,e.z2);
     const p1=project(r1.x,r1.y,r1.z,PUZZLE_OX,PUZZLE_OY);
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
@@ -702,7 +730,7 @@ function drawComplete() {
   drawAxisDecoration(80, 495);
 
   ctx.strokeStyle='#004400'; ctx.lineWidth=1;
-  for(const e of EDGES){
+  for(const e of getEdges()){
     const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
     const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
@@ -715,7 +743,7 @@ function drawComplete() {
   ctx.shadowBlur=0;
 
   ctx.strokeStyle='#004400'; ctx.lineWidth=1;
-  for(const e of EDGES){
+  for(const e of getEdges()){
     const r1=rotateZ(e.x1,e.y1,e.z1), r2=rotateZ(e.x2,e.y2,e.z2);
     const p1=project(r1.x,r1.y,r1.z,PUZZLE_OX,PUZZLE_OY);
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
