@@ -500,6 +500,11 @@ function victorySound() {
   [330,440,550,660,880].forEach((f,i)=>setTimeout(()=>beep(f,120,'square'),i*110));
 }
 
+function errorSound() {
+  beep(160, 180, 'sawtooth');
+  setTimeout(()=>beep(120, 150, 'sawtooth'), 100);
+}
+
 // ── Game Interaction ──
 function ptSegDist(px,py, x1,y1, x2,y2) {
   const dx=x2-x1, dy=y2-y1, lenSq=dx*dx+dy*dy;
@@ -509,6 +514,7 @@ function ptSegDist(px,py, x1,y1, x2,y2) {
 }
 
 const HIT_DIST=10;
+let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
 
 function handleGameClick(mx,my) {
   // Ensure AudioContext is running (browsers require user gesture)
@@ -522,8 +528,26 @@ function handleGameClick(mx,my) {
     const d=ptSegDist(mx,my, s.sx1,s.sy1, s.sx2,s.sy2);
     if(d<bestD){ bestD=d; bestIdx=i; }
   }
-  if(bestIdx<0) return;
+  if(bestIdx<0){
+    const solEdgeSet=new Set(puzzleEdgeCache.map(pe=>pe.edge));
+    let wrongSeg=null, wrongD=HIT_DIST;
+    for(const e of getEdges()){
+      if(solEdgeSet.has(e)) continue;
+      const r1=rotateZ(e.x1,e.y1,e.z1), r2=rotateZ(e.x2,e.y2,e.z2);
+      const p1=project(r1.x,r1.y,r1.z,PUZZLE_OX,PUZZLE_OY);
+      const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
+      const d=ptSegDist(mx,my,p1.sx,p1.sy,p2.sx,p2.sy);
+      if(d<wrongD){ wrongD=d; wrongSeg={sx1:p1.sx,sy1:p1.sy,sx2:p2.sx,sy2:p2.sy}; }
+    }
+    if(wrongSeg){
+      errorSound();
+      missFlash={seg:wrongSeg, t:performance.now()};
+      requestRender();
+    }
+    return;
+  }
 
+  missFlash=null;
   puzzleEdgeCache[bestIdx].traced=true;
   tracedCount++;
   beep(1000,90);
@@ -719,6 +743,23 @@ function drawGame() {
   }
   ctx.shadowBlur=0;
 
+  // Red flicker on miss
+  if(missFlash){
+    const age=performance.now()-missFlash.t;
+    if(age<350){
+      const s=missFlash.seg;
+      const alpha=1-age/350;
+      ctx.strokeStyle=`rgba(255,0,0,${alpha.toFixed(2)})`;
+      ctx.lineWidth=4;
+      ctx.shadowColor='#FF0000'; ctx.shadowBlur=14;
+      ctx.beginPath(); ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2); ctx.stroke();
+      ctx.shadowBlur=0;
+      dirty=true;
+    } else {
+      missFlash=null;
+    }
+  }
+
   drawRotationArms();
   drawScoreBox();
   drawMenuBtn();
@@ -784,8 +825,8 @@ function drawComplete() {
   drawRotationArms();
   drawScoreBox();
 
-  ctx.fillStyle='#00FF00'; ctx.font='bold 18px Courier New'; ctx.textAlign='center';
-  ctx.fillText('FERTIG!', 580, 400);
+  ctx.fillStyle='#00FF00'; ctx.font='bold 22px Courier New'; ctx.textAlign='center';
+  ctx.fillText('FERTIG!', 580, 120);
   ctx.textAlign='left';
 
   for(const btn of COMPLETE_BTNS){
