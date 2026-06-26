@@ -421,8 +421,8 @@ let blinkOn = true;
 setInterval(() => { blinkOn=!blinkOn; if(screen===STATE.INTRO) requestRender(); }, 500);
 
 document.addEventListener('keydown', e => {
+  if(e.key==='d'||e.key==='D'){ debugHitZones=!debugHitZones; requestRender(); return; }
   if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
-  // further cases added in later tasks
 });
 
 canvas.addEventListener('mousemove', e => {
@@ -534,8 +534,9 @@ function ptSegDist(px,py, x1,y1, x2,y2) {
   return Math.hypot(px-(x1+t*dx), py-(y1+t*dy));
 }
 
-const HIT_DIST=10;
+function getHitDist() { return G === 3 ? 6 : 10; }
 let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
+let debugHitZones = false;
 
 function handleGameClick(mx,my) {
   if(screen !== STATE.PLAYING) return;
@@ -543,7 +544,7 @@ function handleGameClick(mx,my) {
 
   if (arcadeMode) {
     // Try solution edges first
-    let bestIdx=-1, bestD=HIT_DIST;
+    let bestIdx=-1, bestD=getHitDist();
     for(let i=0;i<puzzleEdgeCache.length;i++){
       const s=puzzleEdgeCache[i].seg;
       const d=ptSegDist(mx,my, s.sx1,s.sy1, s.sx2,s.sy2);
@@ -560,7 +561,7 @@ function handleGameClick(mx,my) {
       return;
     }
     // Try wrong edges
-    let wIdx=-1, wD=HIT_DIST;
+    let wIdx=-1, wD=getHitDist();
     for(let i=0;i<wrongEdges.length;i++){
       const s=wrongEdges[i].seg;
       const d=ptSegDist(mx,my, s.sx1,s.sy1, s.sx2,s.sy2);
@@ -578,7 +579,7 @@ function handleGameClick(mx,my) {
   }
 
   // ── Training mode (original behavior) ──
-  let bestIdx=-1, bestD=HIT_DIST;
+  let bestIdx=-1, bestD=getHitDist();
   for(let i=0;i<puzzleEdgeCache.length;i++){
     const pe=puzzleEdgeCache[i];
     if(pe.traced) continue;
@@ -588,7 +589,7 @@ function handleGameClick(mx,my) {
   }
   if(bestIdx<0){
     const solEdgeSet=new Set(puzzleEdgeCache.map(pe=>pe.edge));
-    let wrongSeg=null, wrongD=HIT_DIST;
+    let wrongSeg=null, wrongD=getHitDist();
     for(const e of getEdges()){
       if(solEdgeSet.has(e)) continue;
       const r1=rotateZ(e.x1,e.y1,e.z1), r2=rotateZ(e.x2,e.y2,e.z2);
@@ -834,6 +835,7 @@ function drawGame() {
     }
   }
 
+  if (debugHitZones) drawHitZones();
   drawRotationArms();
   if (!arcadeMode) drawScoreBox();
   drawMenuBtn();
@@ -872,6 +874,28 @@ function drawModeBtn() {
   ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
   ctx.fillText(arcadeMode ? '[ ARC    ]' : '[ TRN    ]', b.x + b.w/2, b.y + 19);
   ctx.textAlign = 'left';
+}
+
+function drawHitZones() {
+  const hd = getHitDist();
+  const edges = [
+    ...puzzleEdgeCache.map(pe => ({ seg: pe.seg, color: 'rgba(0,255,255,0.18)' })),
+    ...wrongEdges.map(we => ({ seg: we.seg, color: 'rgba(255,165,0,0.18)' })),
+  ];
+  for (const { seg: s, color } of edges) {
+    const dx = s.sx2 - s.sx1, dy = s.sy2 - s.sy1;
+    const len = Math.hypot(dx, dy);
+    if (len < 1e-9) continue;
+    const nx = (-dy / len) * hd, ny = (dx / len) * hd;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(s.sx1 + nx, s.sy1 + ny);
+    ctx.lineTo(s.sx2 + nx, s.sy2 + ny);
+    ctx.lineTo(s.sx2 - nx, s.sy2 - ny);
+    ctx.lineTo(s.sx1 - nx, s.sy1 - ny);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 function drawMenuBtn() {
