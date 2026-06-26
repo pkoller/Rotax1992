@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>ROTAX — Körper-Nachzeichner</title>
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<meta property="og:title" content="ROTAX — Körper-Nachzeichner">
+<meta property="og:description" content="Zeichne alle Kanten eines 3D-Gitters nach – ohne eine zweimal zu überqueren.">
+<meta property="og:image" content="https://rotax1992.at/assets/preview.jpg">
+<meta property="og:url" content="https://rotax1992.at">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#000; display:flex; justify-content:center; align-items:center; height:100vh; overflow:hidden; }
@@ -534,7 +541,7 @@ function ptSegDist(px,py, x1,y1, x2,y2) {
   return Math.hypot(px-(x1+t*dx), py-(y1+t*dy));
 }
 
-function getHitDist() { return G === 3 ? 6 : 10; }
+function getHitDist() { return G === 3 ? 5 : 10; }
 let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
 let debugHitZones = false;
 

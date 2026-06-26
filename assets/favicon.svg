@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="geometricPrecision">
+  <!-- back face -->
+  <polygon points="11,5 27,5 27,19 11,19" fill="none" stroke="#00cc44" stroke-width="0.7" opacity="0.45"/>
+  <!-- front face -->
+  <polygon points="5,13 21,13 21,27 5,27" fill="none" stroke="#00cc44" stroke-width="0.8"/>
+  <!-- connecting edges -->
+  <line x1="5"  y1="13" x2="11" y2="5"  stroke="#00cc44" stroke-width="0.7" opacity="0.7"/>
+  <line x1="21" y1="13" x2="27" y2="5"  stroke="#00cc44" stroke-width="0.7" opacity="0.7"/>
+  <line x1="21" y1="27" x2="27" y2="19" stroke="#00cc44" stroke-width="0.7" opacity="0.7"/>
+  <line x1="5"  y1="27" x2="11" y2="19" stroke="#00cc44" stroke-width="0.7" opacity="0.7"/>
+</svg>
