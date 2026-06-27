@@ -437,12 +437,15 @@ let blinkOn = true;
 setInterval(() => { blinkOn=!blinkOn; if(screen===STATE.INTRO) requestRender(); }, 500);
 
 document.addEventListener('keydown', e => {
+  if(modeSwitchPending){
+    if(e.key==='Enter'){ modeSwitchPending=false; applyModeSwitch(); }
+    else if(e.key==='Escape'){ modeSwitchPending=false; requestRender(); }
+    return;
+  }
   if(e.key==='d'||e.key==='D'){ debugHitZones=!debugHitZones; requestRender(); return; }
   if(e.key==='s'||e.key==='S'){ soundEnabled=!soundEnabled; requestRender(); return; }
   if(e.key==='n'||e.key==='N'){
-    arcadeMode=!arcadeMode;
-    if(screen===STATE.PLAYING||screen===STATE.COMPLETE) startNewPuzzle(currentDifficulty);
-    else requestRender();
+    requestModeSwitch();
     return;
   }
   if(e.key==='m'||e.key==='M'){
@@ -483,16 +486,23 @@ canvas.addEventListener('touchstart', e => {
   handleClick(mx,my);
 }, {passive:false});
 
+const MODE_CONFIRM_OK_BTN     = {x:280, y:320, w:110, h:36};
+const MODE_CONFIRM_CANCEL_BTN = {x:410, y:320, w:170, h:36};
+
 function handleClick(mx,my) {
+  if(modeSwitchPending){
+    const ok=MODE_CONFIRM_OK_BTN, cancel=MODE_CONFIRM_CANCEL_BTN;
+    if(mx>=ok.x&&mx<=ok.x+ok.w&&my>=ok.y&&my<=ok.y+ok.h){ clickSound(); modeSwitchPending=false; applyModeSwitch(); return; }
+    if(mx>=cancel.x&&mx<=cancel.x+cancel.w&&my>=cancel.y&&my<=cancel.y+cancel.h){ clickSound(); modeSwitchPending=false; requestRender(); return; }
+    return;
+  }
   const sb=SOUND_BTN;
   if(mx>=sb.x&&mx<=sb.x+sb.w&&my>=sb.y&&my<=sb.y+sb.h){
     soundEnabled=!soundEnabled; requestRender(); return;
   }
   const mb=MODE_BTN;
   if(mx>=mb.x&&mx<=mb.x+mb.w&&my>=mb.y&&my<=mb.y+mb.h){
-    arcadeMode=!arcadeMode;
-    if(screen===STATE.PLAYING||screen===STATE.COMPLETE) startNewPuzzle(currentDifficulty);
-    else requestRender();
+    requestModeSwitch();
     return;
   }
   if(screen!==STATE.ABOUT){
@@ -542,6 +552,22 @@ let tracedCount       = 0;
 let wrongEdges        = []; // [{seg, active}] — arcade mode only
 const MODE_BTN  = {x:12, y:76, w:100, h:28};
 let arcadeMode  = false;
+let modeSwitchPending = false;
+
+function hasGameProgress() {
+  return tracedCount>0 || wrongEdges.some(we=>we.active);
+}
+
+function applyModeSwitch() {
+  arcadeMode=!arcadeMode;
+  if(screen===STATE.PLAYING||screen===STATE.COMPLETE) startNewPuzzle(currentDifficulty);
+  else requestRender();
+}
+
+function requestModeSwitch() {
+  if(screen===STATE.PLAYING && hasGameProgress()){ modeSwitchPending=true; requestRender(); }
+  else applyModeSwitch();
+}
 
 // ── Audio ──
 const _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
@@ -700,6 +726,30 @@ function render() {
   drawSoundBtn();
   drawModeBtn();
   if (screen !== STATE.ABOUT) drawAboutBtn();
+  if (modeSwitchPending) drawModeSwitchConfirm();
+}
+
+function drawModeSwitchConfirm() {
+  ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,800,530);
+  const bx=240, by=200, bw=320, bh=180;
+  ctx.fillStyle='#000'; ctx.fillRect(bx,by,bw,bh);
+  ctx.strokeStyle='#FFFF00'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
+
+  ctx.textAlign='center'; ctx.font='13px Courier New'; ctx.fillStyle='#FFFF00';
+  ctx.fillText('FORTSCHRITT GEHT VERLOREN!', 400, by+34);
+  ctx.font='12px Courier New'; ctx.fillStyle='#888';
+  ctx.fillText('Beim Wechsel des Modus wird das', 400, by+58);
+  ctx.fillText('aktuelle Rätsel zurückgesetzt.', 400, by+76);
+
+  const ok=MODE_CONFIRM_OK_BTN, cancel=MODE_CONFIRM_CANCEL_BTN;
+  ctx.strokeStyle='#B5514D'; ctx.strokeRect(ok.x,ok.y,ok.w,ok.h);
+  ctx.fillStyle='#B5514D'; ctx.font='14px Courier New';
+  ctx.fillText('OK', ok.x+ok.w/2, ok.y+23);
+
+  ctx.strokeStyle='#888'; ctx.strokeRect(cancel.x,cancel.y,cancel.w,cancel.h);
+  ctx.fillStyle='#888'; ctx.font='13px Courier New';
+  ctx.fillText(arcadeMode ? 'WEITER PROFI' : 'WEITER TRAINING', cancel.x+cancel.w/2, cancel.y+23);
+  ctx.textAlign='left';
 }
 
 function drawRotationArms() {
