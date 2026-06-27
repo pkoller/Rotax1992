@@ -28,7 +28,10 @@ let gameScale = 1;
 
 function resizeCanvas() {
   const dpr = window.devicePixelRatio || 1;
-  gameScale = Math.min(window.innerWidth / 800, window.innerHeight / 530);
+  const vw = window.visualViewport ? window.visualViewport.width  : window.innerWidth;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  document.body.style.height = vh + 'px';
+  gameScale = Math.min(vw / 800, vh / 530);
   canvas.width  = Math.round(800 * gameScale * dpr);
   canvas.height = Math.round(530 * gameScale * dpr);
   canvas.style.width  = Math.round(800 * gameScale) + 'px';
@@ -36,6 +39,10 @@ function resizeCanvas() {
   dirty = true;
 }
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 100));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resizeCanvas);
+}
 
 const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3 });
 let screen = STATE.INTRO;
