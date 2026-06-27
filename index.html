@@ -767,10 +767,7 @@ function drawDifficulty() {
     ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
     ctx.fillStyle=hot?'#000':accent;
     ctx.font='20px Courier New'; ctx.textAlign='center';
-    ctx.fillText(btn.label, btn.x+btn.w/2, btn.y+30);
-    ctx.fillStyle=hot?'#000':'#888';
-    ctx.font='11px Courier New';
-    ctx.fillText(btn.sub, btn.x+btn.w/2, btn.y+44);
+    ctx.fillText(btn.label, btn.x+btn.w/2, btn.y+btn.h/2+7);
   }
   ctx.textAlign='left';
 }
