@@ -904,7 +904,7 @@ function drawAboutBtn() {
   ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
   ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText('ABOUT', b.x + b.w/2, b.y + 19);
+  ctx.fillText('ÜBER', b.x + b.w/2, b.y + 19);
   ctx.textAlign = 'left';
 }
 
@@ -940,7 +940,7 @@ function drawAbout() {
   const b = ABOUT_BACK_BTN;
   ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(b.x,b.y,b.w,b.h);
   ctx.fillStyle='#B5514D'; ctx.font='15px Courier New'; ctx.textAlign='center';
-  ctx.fillText('BACK', b.x+b.w/2, b.y+23);
+  ctx.fillText('ZURÜCK', b.x+b.w/2, b.y+23);
   ctx.textAlign='left';
 }
 
@@ -949,7 +949,7 @@ function drawSoundBtn() {
   ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
   ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText(soundEnabled ? 'SND ON' : 'SND OFF', b.x + b.w/2, b.y + 19);
+  ctx.fillText('TON ' + (soundEnabled ? 'AN' : 'AUS'), b.x + b.w/2, b.y + 19);
   ctx.textAlign = 'left';
 }
 
