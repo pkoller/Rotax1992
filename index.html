@@ -704,7 +704,7 @@ function drawRotationArms() {
 }
 
 function drawAxisDecoration(lineY1, lineY2) {
-  ctx.strokeStyle='#00FFFF'; ctx.lineWidth=1;
+  ctx.strokeStyle='#00AA00'; ctx.lineWidth=1;
   ctx.setLineDash([5,5]);
   ctx.beginPath(); ctx.moveTo(400,lineY1); ctx.lineTo(400,lineY2); ctx.stroke();
   ctx.setLineDash([]);
@@ -719,7 +719,7 @@ function drawRotaxLogo(startX, startY, S) {
     X:['10001','10001','01010','00100','01010','10001','10001'],
   };
   const GAP=2;
-  ctx.fillStyle='#00FFFF';
+  ctx.fillStyle='#00AA00';
   ['R','O','T','A','X'].forEach((ch,ci)=>{
     GLYPHS[ch].forEach((row,ri)=>{
       [...row].forEach((px,pi)=>{
