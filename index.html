@@ -486,8 +486,8 @@ canvas.addEventListener('touchstart', e => {
   handleClick(mx,my);
 }, {passive:false});
 
-const MODE_CONFIRM_OK_BTN     = {x:280, y:320, w:110, h:36};
-const MODE_CONFIRM_CANCEL_BTN = {x:410, y:320, w:170, h:36};
+const MODE_CONFIRM_OK_BTN     = {x:255, y:330, w:110, h:36};
+const MODE_CONFIRM_CANCEL_BTN = {x:385, y:330, w:160, h:36};
 
 function handleClick(mx,my) {
   if(modeSwitchPending){
@@ -731,7 +731,7 @@ function render() {
 
 function drawModeSwitchConfirm() {
   ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,800,530);
-  const bx=240, by=200, bw=320, bh=180;
+  const bx=200, by=200, bw=400, bh=200;
   ctx.fillStyle='#000'; ctx.fillRect(bx,by,bw,bh);
   ctx.strokeStyle='#FFFF00'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
 
