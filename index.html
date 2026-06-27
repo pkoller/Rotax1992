@@ -503,7 +503,7 @@ let puzzleEdgeCache   = []; // [{edge, seg, traced}]
 let totalVisible      = 0;
 let tracedCount       = 0;
 let wrongEdges        = []; // [{seg, active}] — arcade mode only
-const MODE_BTN  = {x:12, y:44, w:100, h:28};
+const MODE_BTN  = {x:12, y:76, w:100, h:28};
 let arcadeMode  = false;
 
 // ── Audio ──
@@ -852,11 +852,11 @@ function drawScoreBox() {
 
 // ── Completion ──
 const COMPLETE_BTNS=[
-  {label:'WEITER', action:'next', x:450,y:480,w:140,h:36},
+  {label:'WEITER', action:'next', x:600,y:480,w:140,h:36},
 ];
 
-const MENU_BTN = {x:600, y:480, w:140, h:36};
-const SOUND_BTN = {x:12, y:12, w:100, h:28};
+const MENU_BTN = {x:12, y:12, w:100, h:28};
+const SOUND_BTN = {x:12, y:44, w:100, h:28};
 
 function drawSoundBtn() {
   const b = SOUND_BTN;
@@ -900,8 +900,8 @@ function drawHitZones() {
 
 function drawMenuBtn() {
   ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(MENU_BTN.x,MENU_BTN.y,MENU_BTN.w,MENU_BTN.h);
-  ctx.fillStyle='#B5514D'; ctx.font='15px Courier New'; ctx.textAlign='center';
-  ctx.fillText('MENÜ', MENU_BTN.x+MENU_BTN.w/2, MENU_BTN.y+23);
+  ctx.fillStyle='#B5514D'; ctx.font='13px Courier New'; ctx.textAlign='center';
+  ctx.fillText('MENÜ', MENU_BTN.x+MENU_BTN.w/2, MENU_BTN.y+19);
   ctx.textAlign='left';
 }
 
