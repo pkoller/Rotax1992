@@ -44,7 +44,7 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', resizeCanvas);
 }
 
-const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3 });
+const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3, ABOUT:4 });
 let screen = STATE.INTRO;
 let dirty = true;
 
@@ -445,8 +445,16 @@ document.addEventListener('keydown', e => {
     return;
   }
   if(e.key==='m'||e.key==='M'){
-    if(screen===STATE.PLAYING||screen===STATE.COMPLETE){ clickSound(); setScreen(STATE.DIFFICULTY); }
+    if(screen===STATE.PLAYING||screen===STATE.COMPLETE||screen===STATE.INTRO||screen===STATE.ABOUT){ clickSound(); setScreen(STATE.DIFFICULTY); }
     return;
+  }
+  if(e.key==='a'||e.key==='A'){
+    if(screen!==STATE.ABOUT){ clickSound(); setScreen(STATE.ABOUT); }
+    return;
+  }
+  if(['1','2','3','4'].includes(e.key) && (screen===STATE.DIFFICULTY||screen===STATE.PLAYING||screen===STATE.COMPLETE)){
+    const btn=DIFF_BTNS[Number(e.key)-1];
+    clickSound(); startNewPuzzle(btn.diff); return;
   }
   if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
 });
@@ -484,6 +492,15 @@ function handleClick(mx,my) {
     arcadeMode=!arcadeMode;
     if(screen===STATE.PLAYING||screen===STATE.COMPLETE) startNewPuzzle(currentDifficulty);
     else requestRender();
+    return;
+  }
+  if(screen!==STATE.ABOUT){
+    const ab=ABOUT_BTN;
+    if(mx>=ab.x&&mx<=ab.x+ab.w&&my>=ab.y&&my<=ab.y+ab.h){ clickSound(); setScreen(STATE.ABOUT); return; }
+  }
+  if(screen===STATE.ABOUT){
+    const b=ABOUT_BACK_BTN;
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
     return;
   }
   if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
@@ -678,8 +695,10 @@ function render() {
   else if (screen === STATE.DIFFICULTY) drawDifficulty();
   else if (screen === STATE.PLAYING)    drawGame();
   else if (screen === STATE.COMPLETE)   drawComplete();
+  else if (screen === STATE.ABOUT)      drawAbout();
   drawSoundBtn();
   drawModeBtn();
+  if (screen !== STATE.ABOUT) drawAboutBtn();
 }
 
 function drawRotationArms() {
@@ -877,6 +896,53 @@ const COMPLETE_BTNS=[
 
 const MENU_BTN = {x:12, y:12, w:100, h:28};
 const SOUND_BTN = {x:12, y:44, w:100, h:28};
+const ABOUT_BTN = {x:688, y:12, w:100, h:28};
+const ABOUT_BACK_BTN = {x:350, y:470, w:100, h:36};
+
+function drawAboutBtn() {
+  const b = ABOUT_BTN;
+  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
+  ctx.fillText('ABOUT', b.x + b.w/2, b.y + 19);
+  ctx.textAlign = 'left';
+}
+
+function drawAbout() {
+  ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.textAlign='center';
+  ctx.fillText('ÜBER ROTAX', 400, 60);
+  ctx.textAlign='left';
+
+  const lines = [
+    ['#00AA00', 'ROTAX — Körper-Nachzeichner ist ein 3D-Wahrnehmungsspiel.'],
+    ['#00AA00', 'Links siehst du einen Körper aus aktivierten Würfeln (Urkörper).'],
+    ['#00AA00', 'Rechts erscheint derselbe Körper, um 90° um die Z-Achse gedreht'],
+    ['#00AA00', '(Dünnkörper). Klicke alle sichtbaren Kanten des gedrehten Körpers nach.'],
+    ['#888',    ''],
+    ['#FFFF00', 'Tastenkürzel:'],
+    ['#888',    'M  —  zurück zum Menü'],
+    ['#888',    'S  —  Sound an/aus'],
+    ['#888',    'N  —  Training/Profi-Modus wechseln'],
+    ['#888',    '1–4  —  Schwierigkeit wählen (auch während des Spiels)'],
+    ['#888',    ''],
+    ['#00FF66', 'ROTAX basiert auf einem Turbo-Pascal-Programm aus dem Jahr 1992.'],
+    ['#00FF66', 'Es wurde von einem österreichischen Lehrer entwickelt, um Schülern'],
+    ['#00FF66', 'das räumliche Vorstellungsvermögen (3D-Wahrnehmung) zu vermitteln.'],
+  ];
+  ctx.font='13px Courier New'; ctx.textAlign='left';
+  let y = 130;
+  for (const [color, text] of lines) {
+    ctx.fillStyle = color;
+    ctx.fillText(text, 110, y);
+    y += 22;
+  }
+
+  const b = ABOUT_BACK_BTN;
+  ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(b.x,b.y,b.w,b.h);
+  ctx.fillStyle='#B5514D'; ctx.font='15px Courier New'; ctx.textAlign='center';
+  ctx.fillText('BACK', b.x+b.w/2, b.y+23);
+  ctx.textAlign='left';
+}
 
 function drawSoundBtn() {
   const b = SOUND_BTN;
