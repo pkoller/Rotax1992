@@ -510,6 +510,8 @@ function handleClick(mx,my) {
     if(mx>=ab.x&&mx<=ab.x+ab.w&&my>=ab.y&&my<=ab.y+ab.h){ aboutPrevScreen=screen; clickSound(); setScreen(STATE.ABOUT); return; }
   }
   if(screen===STATE.ABOUT){
+    const mn=MENU_BTN;
+    if(mx>=mn.x&&mx<=mn.x+mn.w&&my>=mn.y&&my<=mn.y+mn.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
     const b=ABOUT_BACK_BTN;
     if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(aboutPrevScreen); return; }
     return;
@@ -960,6 +962,7 @@ function drawAboutBtn() {
 }
 
 function drawAbout() {
+  drawMenuBtn();
   ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.textAlign='center';
   ctx.fillText('ÜBER ROTAX', 400, 60);
   ctx.textAlign='left';
