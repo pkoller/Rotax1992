@@ -753,10 +753,6 @@ function drawIntro() {
 function drawDifficulty() {
   drawRotaxLogo(321, 20, 6);
   drawAxisDecoration(80, 490);
-  ctx.fillStyle='#00FFFF'; ctx.font='22px Courier New'; ctx.textAlign='center';
-  ctx.fillText('SCHWIERIGKEITSGRAD', 400, 120);
-  ctx.fillStyle='#555'; ctx.font='12px Courier New';
-  ctx.fillText('WÄHLE EINE STUFE', 400, 148);
 
   for(const btn of DIFF_BTNS){
     const hot=(btn===hoveredDiff);
