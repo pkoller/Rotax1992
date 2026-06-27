@@ -781,7 +781,7 @@ function drawGame() {
 
   // ── Preview panel (Urkörper) ──
   // 1. Faint full wireframe (all edges in preview coords)
-  ctx.strokeStyle='#004400'; ctx.lineWidth=1;
+  ctx.strokeStyle='#777777'; ctx.lineWidth=1;
   for(const e of getEdges()){
     const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
     const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
@@ -796,7 +796,7 @@ function drawGame() {
   ctx.shadowBlur=0;
 
   // ── Puzzle panel (Dünnkörper) — full wireframe dim ──
-  ctx.strokeStyle='#004400'; ctx.lineWidth=1;
+  ctx.strokeStyle='#777777'; ctx.lineWidth=1;
   for(const e of getEdges()){
     const r1=rotateZ(e.x1,e.y1,e.z1), r2=rotateZ(e.x2,e.y2,e.z2);
     const p1=project(r1.x,r1.y,r1.z,PUZZLE_OX,PUZZLE_OY);
@@ -912,7 +912,7 @@ function drawComplete() {
   drawRotaxLogo(321, 20, 6);
   drawAxisDecoration(80, 495);
 
-  ctx.strokeStyle='#004400'; ctx.lineWidth=1;
+  ctx.strokeStyle='#777777'; ctx.lineWidth=1;
   for(const e of getEdges()){
     const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
     const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
@@ -925,7 +925,7 @@ function drawComplete() {
   }
   ctx.shadowBlur=0;
 
-  ctx.strokeStyle='#004400'; ctx.lineWidth=1;
+  ctx.strokeStyle='#777777'; ctx.lineWidth=1;
   for(const e of getEdges()){
     const r1=rotateZ(e.x1,e.y1,e.z1), r2=rotateZ(e.x2,e.y2,e.z2);
     const p1=project(r1.x,r1.y,r1.z,PUZZLE_OX,PUZZLE_OY);
