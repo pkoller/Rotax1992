@@ -437,6 +437,17 @@ setInterval(() => { blinkOn=!blinkOn; if(screen===STATE.INTRO) requestRender(); 
 
 document.addEventListener('keydown', e => {
   if(e.key==='d'||e.key==='D'){ debugHitZones=!debugHitZones; requestRender(); return; }
+  if(e.key==='s'||e.key==='S'){ soundEnabled=!soundEnabled; requestRender(); return; }
+  if(e.key==='n'||e.key==='N'){
+    arcadeMode=!arcadeMode;
+    if(screen===STATE.PLAYING||screen===STATE.COMPLETE) startNewPuzzle(currentDifficulty);
+    else requestRender();
+    return;
+  }
+  if(e.key==='m'||e.key==='M'){
+    if(screen===STATE.PLAYING||screen===STATE.COMPLETE){ clickSound(); setScreen(STATE.DIFFICULTY); }
+    return;
+  }
   if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
 });
 
