@@ -416,10 +416,10 @@ function isValidPuzzle(a,difficulty){
 
 // ── Difficulty Select ──
 const DIFF_BTNS = [
-  { label:'[ LEICHT ]',   sub:'1–2 WÜRFEL  |  VERBUNDEN',    diff:'easy',     x:260,y:178,w:280,h:48 },
-  { label:'[ MITTEL ]',   sub:'3–7 WÜRFEL  |  VERBUNDEN',    diff:'medium',   x:260,y:248,w:280,h:48 },
-  { label:'[ SCHWER ]',   sub:'3–6 WÜRFEL  |  BELIEBIG',     diff:'hard',     x:260,y:318,w:280,h:48 },
-  { label:'[ WAHNSINN ]', sub:'3×3×3 GITTER  |  ZUFÄLLIG',  diff:'wahnsinn', x:260,y:388,w:280,h:48, danger:true },
+  { label:'LEICHT',   sub:'1–2 WÜRFEL  |  VERBUNDEN',    diff:'easy',     x:260,y:178,w:280,h:48 },
+  { label:'MITTEL',   sub:'3–7 WÜRFEL  |  VERBUNDEN',    diff:'medium',   x:260,y:248,w:280,h:48 },
+  { label:'SCHWER',   sub:'3–6 WÜRFEL  |  BELIEBIG',     diff:'hard',     x:260,y:318,w:280,h:48 },
+  { label:'WAHNSINN', sub:'3×3×3 GITTER  |  ZUFÄLLIG',  diff:'wahnsinn', x:260,y:388,w:280,h:48, danger:true },
 ];
 let hoveredDiff = null;
 
@@ -745,7 +745,7 @@ function drawIntro() {
   // Blinking prompt
   if(blinkOn){
     ctx.fillStyle='#FFFFFF'; ctx.font='16px Courier New';
-    ctx.fillText('[ PRESS ANY KEY ]', 400, 445);
+    ctx.fillText('PRESS ANY KEY', 400, 445);
   }
   ctx.textAlign='left';
 }
@@ -859,7 +859,7 @@ function drawScoreBox() {
 
 // ── Completion ──
 const COMPLETE_BTNS=[
-  {label:'[ WEITER ]', action:'next', x:510,y:430,w:140,h:36},
+  {label:'WEITER', action:'next', x:510,y:430,w:140,h:36},
 ];
 
 const MENU_BTN = {x:600, y:480, w:140, h:36};
@@ -870,7 +870,7 @@ function drawSoundBtn() {
   ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
   ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText(soundEnabled ? '[ SND ON ]' : '[ SND OFF]', b.x + b.w/2, b.y + 19);
+  ctx.fillText(soundEnabled ? 'SND ON' : 'SND OFF', b.x + b.w/2, b.y + 19);
   ctx.textAlign = 'left';
 }
 
@@ -879,7 +879,7 @@ function drawModeBtn() {
   ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
   ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText(arcadeMode ? '[ ARC    ]' : '[ TRN    ]', b.x + b.w/2, b.y + 19);
+  ctx.fillText(arcadeMode ? 'ARCADE' : 'TRAINING', b.x + b.w/2, b.y + 19);
   ctx.textAlign = 'left';
 }
 
@@ -908,7 +908,7 @@ function drawHitZones() {
 function drawMenuBtn() {
   ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(MENU_BTN.x,MENU_BTN.y,MENU_BTN.w,MENU_BTN.h);
   ctx.fillStyle='#B5514D'; ctx.font='15px Courier New'; ctx.textAlign='center';
-  ctx.fillText('[ MENÜ ]', MENU_BTN.x+MENU_BTN.w/2, MENU_BTN.y+23);
+  ctx.fillText('MENÜ', MENU_BTN.x+MENU_BTN.w/2, MENU_BTN.y+23);
   ctx.textAlign='left';
 }
 
