@@ -437,19 +437,20 @@ let blinkOn = true;
 setInterval(() => { blinkOn=!blinkOn; if(screen===STATE.INTRO) requestRender(); }, 500);
 
 document.addEventListener('keydown', e => {
-  if(modeSwitchPending){
-    if(e.key==='Enter'){ modeSwitchPending=false; applyModeSwitch(); }
-    else if(e.key==='Escape'){ modeSwitchPending=false; requestRender(); }
+  if(pendingConfirmAction){
+    if(e.key==='Enter'){ const a=pendingConfirmAction; pendingConfirmAction=null; applyConfirmedAction(a); }
+    else if(e.key==='Escape'){ pendingConfirmAction=null; requestRender(); }
     return;
   }
   if(e.key==='d'||e.key==='D'){ debugHitZones=!debugHitZones; requestRender(); return; }
   if(e.key==='s'||e.key==='S'){ soundEnabled=!soundEnabled; requestRender(); return; }
   if(e.key==='n'||e.key==='N'){
-    requestModeSwitch();
+    requestConfirm('mode');
     return;
   }
   if(e.key==='m'||e.key==='M'){
-    if(screen===STATE.PLAYING||screen===STATE.COMPLETE||screen===STATE.INTRO||screen===STATE.ABOUT){ clickSound(); setScreen(STATE.DIFFICULTY); }
+    if(screen===STATE.PLAYING){ clickSound(); requestConfirm('menu'); }
+    else if(screen===STATE.COMPLETE||screen===STATE.INTRO||screen===STATE.ABOUT){ clickSound(); setScreen(STATE.DIFFICULTY); }
     return;
   }
   if(e.key==='a'||e.key==='A'){
@@ -490,10 +491,10 @@ const MODE_CONFIRM_OK_BTN     = {x:255, y:330, w:110, h:36};
 const MODE_CONFIRM_CANCEL_BTN = {x:385, y:330, w:160, h:36};
 
 function handleClick(mx,my) {
-  if(modeSwitchPending){
+  if(pendingConfirmAction){
     const ok=MODE_CONFIRM_OK_BTN, cancel=MODE_CONFIRM_CANCEL_BTN;
-    if(mx>=ok.x&&mx<=ok.x+ok.w&&my>=ok.y&&my<=ok.y+ok.h){ clickSound(); modeSwitchPending=false; applyModeSwitch(); return; }
-    if(mx>=cancel.x&&mx<=cancel.x+cancel.w&&my>=cancel.y&&my<=cancel.y+cancel.h){ clickSound(); modeSwitchPending=false; requestRender(); return; }
+    if(mx>=ok.x&&mx<=ok.x+ok.w&&my>=ok.y&&my<=ok.y+ok.h){ clickSound(); const a=pendingConfirmAction; pendingConfirmAction=null; applyConfirmedAction(a); return; }
+    if(mx>=cancel.x&&mx<=cancel.x+cancel.w&&my>=cancel.y&&my<=cancel.y+cancel.h){ clickSound(); pendingConfirmAction=null; requestRender(); return; }
     return;
   }
   const sb=SOUND_BTN;
@@ -502,7 +503,7 @@ function handleClick(mx,my) {
   }
   const mb=MODE_BTN;
   if(mx>=mb.x&&mx<=mb.x+mb.w&&my>=mb.y&&my<=mb.y+mb.h){
-    requestModeSwitch();
+    requestConfirm('mode');
     return;
   }
   if(screen!==STATE.ABOUT){
@@ -527,7 +528,7 @@ function handleClick(mx,my) {
   }
   if(screen===STATE.PLAYING){
     const b=MENU_BTN;
-    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); requestConfirm('menu'); return; }
     handleGameClick(mx,my); return;
   }
   if(screen===STATE.COMPLETE){
@@ -554,7 +555,7 @@ let tracedCount       = 0;
 let wrongEdges        = []; // [{seg, active}] — arcade mode only
 const MODE_BTN  = {x:12, y:76, w:100, h:28};
 let arcadeMode  = false;
-let modeSwitchPending = false;
+let pendingConfirmAction = null; // null | 'mode' | 'menu'
 
 function hasGameProgress() {
   return tracedCount>0 || wrongEdges.some(we=>we.active);
@@ -566,9 +567,14 @@ function applyModeSwitch() {
   else requestRender();
 }
 
-function requestModeSwitch() {
-  if(screen===STATE.PLAYING && hasGameProgress()){ modeSwitchPending=true; requestRender(); }
-  else applyModeSwitch();
+function applyConfirmedAction(action) {
+  if(action==='mode') applyModeSwitch();
+  else if(action==='menu') setScreen(STATE.DIFFICULTY);
+}
+
+function requestConfirm(action) {
+  if(screen===STATE.PLAYING && hasGameProgress()){ pendingConfirmAction=action; requestRender(); }
+  else applyConfirmedAction(action);
 }
 
 // ── Audio ──
@@ -728,20 +734,26 @@ function render() {
   drawSoundBtn();
   drawModeBtn();
   if (screen !== STATE.ABOUT) drawAboutBtn();
-  if (modeSwitchPending) drawModeSwitchConfirm();
+  if (pendingConfirmAction) drawConfirmDialog();
 }
 
-function drawModeSwitchConfirm() {
+function drawConfirmDialog() {
   ctx.fillStyle='rgba(0,0,0,0.75)'; ctx.fillRect(0,0,800,530);
   const bx=200, by=200, bw=400, bh=200;
   ctx.fillStyle='#000'; ctx.fillRect(bx,by,bw,bh);
   ctx.strokeStyle='#FFFF00'; ctx.lineWidth=1; ctx.strokeRect(bx,by,bw,bh);
 
+  const isMode = pendingConfirmAction==='mode';
   ctx.textAlign='center'; ctx.font='13px Courier New'; ctx.fillStyle='#FFFF00';
   ctx.fillText('FORTSCHRITT GEHT VERLOREN!', 400, by+34);
   ctx.font='12px Courier New'; ctx.fillStyle='#888';
-  ctx.fillText('Beim Wechseln des Modus wird ein', 400, by+58);
-  ctx.fillText('neues Rätsel gestartet.', 400, by+76);
+  if(isMode){
+    ctx.fillText('Beim Wechseln des Modus wird ein', 400, by+58);
+    ctx.fillText('neues Rätsel gestartet.', 400, by+76);
+  } else {
+    ctx.fillText('Beim Verlassen des Spiels geht der', 400, by+58);
+    ctx.fillText('aktuelle Fortschritt verloren.', 400, by+76);
+  }
 
   const ok=MODE_CONFIRM_OK_BTN, cancel=MODE_CONFIRM_CANCEL_BTN;
   ctx.strokeStyle='#B5514D'; ctx.strokeRect(ok.x,ok.y,ok.w,ok.h);
@@ -750,7 +762,7 @@ function drawModeSwitchConfirm() {
 
   ctx.strokeStyle='#888'; ctx.strokeRect(cancel.x,cancel.y,cancel.w,cancel.h);
   ctx.fillStyle='#888'; ctx.font='13px Courier New';
-  ctx.fillText(arcadeMode ? 'WEITER PROFI' : 'WEITER TRAINING', cancel.x+cancel.w/2, cancel.y+23);
+  ctx.fillText(isMode ? (arcadeMode ? 'WEITER PROFI' : 'WEITER TRAINING') : 'WEITER SPIELEN', cancel.x+cancel.w/2, cancel.y+23);
   ctx.textAlign='left';
 }
 
