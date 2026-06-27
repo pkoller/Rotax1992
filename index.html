@@ -49,8 +49,8 @@ function setScreen(s) { screen = s; dirty = true; }
 function requestRender() { dirty = true; }
 
 // ── Geometry ──
-const PREVIEW_OX = 60,  PREVIEW_OY = 350;
-const PUZZLE_OX  = 440, PUZZLE_OY  = 380;
+const PREVIEW_OX = 60,  PREVIEW_OY = 355;
+const PUZZLE_OX  = 440, PUZZLE_OY  = 395;
 
 // Build all edges of a G×G×G sub-cube grid (vertices 0–G per axis)
 function buildEdges(g) {
@@ -774,8 +774,9 @@ function drawGame() {
 
 
   // Difficulty label
+  const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', wahnsinn:'WAHNSINN'};
   ctx.fillStyle='#888'; ctx.font='11px Courier New'; ctx.textAlign='center';
-  ctx.fillText(currentDifficulty.toUpperCase(), 400, 510);
+  ctx.fillText(DIFF_LABELS[currentDifficulty], 400, 510);
   ctx.textAlign='left';
 
   // ── Preview panel (Urkörper) ──
@@ -872,7 +873,7 @@ function drawModeBtn() {
   ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
   ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText(arcadeMode ? 'ARCADE' : 'TRAINING', b.x + b.w/2, b.y + 19);
+  ctx.fillText(arcadeMode ? 'PROFI' : 'TRAINING', b.x + b.w/2, b.y + 19);
   ctx.textAlign = 'left';
 }
 
