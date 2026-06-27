@@ -54,6 +54,7 @@ let G = 2;
 let PROJ_S = 120;
 
 function setScreen(s) { screen = s; dirty = true; }
+let aboutPrevScreen = STATE.DIFFICULTY;
 function requestRender() { dirty = true; }
 
 // ── Geometry ──
@@ -449,7 +450,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if(e.key==='a'||e.key==='A'){
-    if(screen!==STATE.ABOUT){ clickSound(); setScreen(STATE.ABOUT); }
+    if(screen!==STATE.ABOUT){ aboutPrevScreen=screen; clickSound(); setScreen(STATE.ABOUT); }
     return;
   }
   if(['1','2','3','4'].includes(e.key) && (screen===STATE.DIFFICULTY||screen===STATE.PLAYING||screen===STATE.COMPLETE)){
@@ -496,11 +497,11 @@ function handleClick(mx,my) {
   }
   if(screen!==STATE.ABOUT){
     const ab=ABOUT_BTN;
-    if(mx>=ab.x&&mx<=ab.x+ab.w&&my>=ab.y&&my<=ab.y+ab.h){ clickSound(); setScreen(STATE.ABOUT); return; }
+    if(mx>=ab.x&&mx<=ab.x+ab.w&&my>=ab.y&&my<=ab.y+ab.h){ aboutPrevScreen=screen; clickSound(); setScreen(STATE.ABOUT); return; }
   }
   if(screen===STATE.ABOUT){
     const b=ABOUT_BACK_BTN;
-    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(aboutPrevScreen); return; }
     return;
   }
   if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
