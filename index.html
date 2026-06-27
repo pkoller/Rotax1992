@@ -42,15 +42,15 @@ let dirty = true;
 
 // Grid size: 2 for leicht/mittel/schwer (2×2×2 cubes), 3 for wahnsinn (3×3×3 cubes)
 let G = 2;
-// Projection scale: 100 for G=2, 200/3 for G=3 — keeps the cube the same visual footprint
-let PROJ_S = 100;
+// Projection scale: 120 for G=2, 240/3 for G=3 — keeps the cube the same visual footprint
+let PROJ_S = 120;
 
 function setScreen(s) { screen = s; dirty = true; }
 function requestRender() { dirty = true; }
 
 // ── Geometry ──
-const PREVIEW_OX = 100,  PREVIEW_OY = 320;
-const PUZZLE_OX  = 430, PUZZLE_OY  = 350;
+const PREVIEW_OX = 60,  PREVIEW_OY = 350;
+const PUZZLE_OX  = 440, PUZZLE_OY  = 380;
 
 // Build all edges of a G×G×G sub-cube grid (vertices 0–G per axis)
 function buildEdges(g) {
@@ -626,7 +626,7 @@ function startNewPuzzle(difficulty) {
   currentDifficulty = difficulty;
   // Set grid size and projection scale for the chosen difficulty
   G      = difficulty === 'wahnsinn' ? 3 : 2;
-  PROJ_S = 200 / G; // 100 for 2×2×2, ~66.7 for 3×3×3 — same visual footprint
+  PROJ_S = 240 / G; // 120 for 2×2×2, 80 for 3×3×3 — same visual footprint
   activeState       = generatePuzzle(difficulty);
   puzzleEdgeCache   = getPuzzleEdges(activeState);
   totalVisible      = puzzleEdgeCache.length;
@@ -852,7 +852,7 @@ function drawScoreBox() {
 
 // ── Completion ──
 const COMPLETE_BTNS=[
-  {label:'WEITER', action:'next', x:510,y:430,w:140,h:36},
+  {label:'WEITER', action:'next', x:450,y:480,w:140,h:36},
 ];
 
 const MENU_BTN = {x:600, y:480, w:140, h:36};
