@@ -262,35 +262,57 @@ function buildOccluders(active) {
     // −X face at X=i (exposed toward −X viewer); edge is in-front when edgeCoord <= coord
     if(!isActive(active,i-1,j,k))
       occ.push({ poly: faceScreenPoly([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]]),
-                 axis:'x', coord:i, above:false });
+                 axis:'x', coord:i, above:false, i,j,k });
     // −Y face at Y=j (reversed winding so clipSegPoly inward normals are correct)
     if(!isActive(active,i,j-1,k))
       occ.push({ poly: faceScreenPoly([[i,j,k+1],[i+1,j,k+1],[i+1,j,k],[i,j,k]]),
-                 axis:'y', coord:j, above:false });
+                 axis:'y', coord:j, above:false, i,j,k });
     // +Z face at Z=k+1 (reversed winding)
     if(!isActive(active,i,j,k+1))
       occ.push({ poly: faceScreenPoly([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]]),
-                 axis:'z', coord:k+1, above:true });
+                 axis:'z', coord:k+1, above:true, i,j,k });
   }
   return occ;
 }
 
+function tracePoly(poly) {
+  ctx.beginPath();
+  ctx.moveTo(poly[0].x, poly[0].y);
+  for (let i=1;i<poly.length;i++) ctx.lineTo(poly[i].x, poly[i].y);
+  ctx.closePath();
+}
+
+// True if occluder O's plane sits in front of face F (mirrors the per-axis inFront
+// test in visibleSegment): same-axis faces compare coord directly; cross-axis faces
+// compare O's coord against F's owning-cube index along O's axis (always unambiguous
+// since cube faces sit on integer boundaries, so F never straddles O's plane).
+function occludesFace(O, F) {
+  if (O.axis === F.axis) return O.above ? O.coord > F.coord : O.coord < F.coord;
+  const value = (O.axis==='x' ? F.i : O.axis==='y' ? F.j : F.k) + 0.5;
+  const inFront = O.above ? value >= O.coord : value <= O.coord;
+  return !inFront;
+}
+
 // Win payoff: floodfill the solved solid's visible faces, like the original's
 // `fuellen` (setfillstyle/floodfill in green/darkgray once all 22 edges are traced).
+// Each face is clipped to itself, filled, then has every nearer occluder's polygon
+// punched out of it (destination-out) — exact per-pair occlusion, no depth-sort guesswork.
 function drawSolidFill() {
-  const occ = buildOccluders(activeState).map(o => {
-    const depth = o.axis === 'z' ? o.coord : -o.coord; // painter's order, viewer-relative
-    const color = o.axis === 'z' ? 'rgba(0,255,80,0.55)' : 'rgba(20,90,90,0.55)';
-    return { ...o, depth, color };
-  });
-  occ.sort((a,b) => a.depth - b.depth); // farthest first, nearest drawn last (on top)
-  for (const o of occ) {
-    ctx.beginPath();
-    ctx.moveTo(o.poly[0].x, o.poly[0].y);
-    for (let i=1;i<o.poly.length;i++) ctx.lineTo(o.poly[i].x, o.poly[i].y);
-    ctx.closePath();
-    ctx.fillStyle = o.color;
+  const occ = buildOccluders(activeState);
+  for (const F of occ) {
+    ctx.save();
+    tracePoly(F.poly);
+    ctx.clip();
+    ctx.fillStyle = F.axis === 'z' ? 'rgba(0,255,80,0.55)' : 'rgba(20,90,90,0.55)';
     ctx.fill();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = '#000';
+    for (const O of occ) {
+      if (O === F || !occludesFace(O, F)) continue;
+      tracePoly(O.poly);
+      ctx.fill();
+    }
+    ctx.restore();
   }
 }
 
