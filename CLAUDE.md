@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-ROTAX — Körper-Nachzeichner. A retro DOS-aesthetic 3D puzzle game, translated/ported from a 1992 Turbo Pascal original (`original_rotax/PROJ12.PAS`). The player sees a 3D solid ("Urkörper") on the left and must trace the visible edges of the same solid rotated 90° around the Z-axis ("Dünnkörper") on the right.
+ROTAXIS — Körper-Nachzeichner. A retro DOS-aesthetic 3D puzzle game, translated/ported from a 1992 Turbo Pascal original (`original_rotax/PROJ12.PAS`). The player sees a 3D solid ("Urkörper") on the left and must trace the visible edges of the same solid rotated 90° around the Z-axis ("Dünnkörper") on the right.
 
 ## Running / developing
 

@@ -1,4 +1,4 @@
-# ROTAX — Körper-Nachzeichner
+# ROTAXIS — Körper-Nachzeichner
 
 A retro 3D puzzle game inspired by a 1992 Turbo Pascal original.
 

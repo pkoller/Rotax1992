@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ROTAX — Körper-Nachzeichner</title>
+<title>ROTAXIS — Körper-Nachzeichner</title>
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-<meta property="og:title" content="ROTAX — Körper-Nachzeichner">
+<meta property="og:title" content="ROTAXIS — Körper-Nachzeichner">
 <meta property="og:description" content="Zeichne alle Kanten eines 3D-Gitters nach">
 <meta property="og:image" content="https://rotax1992.at/assets/preview.jpg">
 <meta property="og:url" content="https://rotax1992.at">
@@ -323,6 +323,10 @@ function getPuzzleEdges(active) {
 }
 
 // ── Puzzle Generator ──
+function cloneActive(a) {
+  return a.map(plane => plane.map(row => [...row]));
+}
+
 function makeActive() {
   const a=[];
   for(let i=0;i<G;i++){a.push([]);for(let j=0;j<G;j++){a[i].push([]);for(let k=0;k<G;k++)a[i][j].push(false);}}
@@ -407,10 +411,26 @@ function generatePuzzle(difficulty) {
       const cubes=shuffledCubes();
       for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
     }
-    if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) return a;
+    if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) { activateInvisibleCubes(a); return a; }
   }
   // fallback: single cube
   const a=makeActive(); a[0][0][0]=true; return a;
+}
+
+function activateInvisibleCubes(a) {
+  // Any inactive cube that wouldn't add visible preview edges if activated is set active.
+  // Iterate to fixpoint because activating one cube can expose previously-invisible ones.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    const baseCount = getPreviewEdges(a).length;
+    for (let i=0; i<G; i++) for (let j=0; j<G; j++) for (let k=0; k<G; k++) {
+      if (a[i][j][k]) continue;
+      const test = cloneActive(a);
+      test[i][j][k] = true;
+      if (getPreviewEdges(test).length === baseCount) { a[i][j][k] = true; changed = true; }
+    }
+  }
 }
 
 function isValidPuzzle(a,difficulty){
@@ -820,10 +840,12 @@ function drawRotaxLogo(startX, startY, S) {
     T:['11111','00100','00100','00100','00100','00100','00100'],
     A:['00100','01010','10001','10001','11111','10001','10001'],
     X:['10001','10001','01010','00100','01010','10001','10001'],
+    I:['11111','00100','00100','00100','00100','00100','11111'],
+    S:['01111','10000','10000','01110','00001','00001','11110'],
   };
   const GAP=2;
   ctx.fillStyle='#00AA00';
-  ['R','O','T','A','X'].forEach((ch,ci)=>{
+  ['R','O','T','A','X','I','S'].forEach((ch,ci)=>{
     GLYPHS[ch].forEach((row,ri)=>{
       [...row].forEach((px,pi)=>{
         if(px==='1') ctx.fillRect(startX+ci*(5*S+GAP)+pi*S, startY+ri*S, S-1, S-1);
@@ -978,11 +1000,11 @@ function drawAboutBtn() {
 function drawAbout() {
   drawMenuBtn();
   ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.textAlign='center';
-  ctx.fillText('ÜBER ROTAX', 400, 60);
+  ctx.fillText('ÜBER ROTAXIS', 400, 60);
   ctx.textAlign='left';
 
   const lines = [
-    ['#00AA00', 'ROTAX — Körper-Nachzeichner ist ein 3D-Wahrnehmungsspiel.'],
+    ['#00AA00', 'ROTAXIS — Körper-Nachzeichner ist ein 3D-Wahrnehmungsspiel.'],
     ['#00AA00', 'Links siehst du einen Körper aus aktivierten Würfeln (Urkörper).'],
     ['#00AA00', 'Rechts erscheint derselbe Körper, um 90° um die Z-Achse gedreht'],
     ['#00AA00', '(Dünnkörper). Klicke alle sichtbaren Kanten des gedrehten Körpers nach.'],
@@ -993,7 +1015,7 @@ function drawAbout() {
     ['#888',    'N  —  Training/Profi-Modus wechseln'],
     ['#888',    '1–4  —  Schwierigkeit wählen (auch während des Spiels)'],
     ['#888',    ''],
-    ['#00FF66', 'ROTAX basiert auf einem Turbo-Pascal-Programm aus dem Jahr 1992.'],
+    ['#00FF66', 'ROTAXIS basiert auf einem Turbo-Pascal-Programm aus dem Jahr 1992.'],
     ['#00FF66', 'Es wurde von einem österreichischen Lehrer entwickelt, um Schülern'],
     ['#00FF66', 'das räumliche Vorstellungsvermögen (3D-Wahrnehmung) zu vermitteln.'],
   ];
