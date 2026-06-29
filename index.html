@@ -17,10 +17,11 @@
   /* PROJ12.PAS defines a custom `cursormaske`/`cursormuster` (lines 8-52) but never
      actually installs them — EigenerGrafikCursor/Trafo are never called. So what the
      original game really shows is the DOS mouse driver's stock graphics cursor: a
-     hollow circle with a center dot. Reproduced here as a chunky pixel-art ring+dot
-     (13x13 grid, hand-rasterized circle, crispEdges so it stays blocky like DOS). */
+     hollow circle with a center cross. Reproduced here as a chunky pixel-art ring+cross
+     (13x13 grid, hand-rasterized circle, crispEdges so it stays blocky like DOS).
+     Background is transparent so only the ring and center cross are visible. */
   canvas { display:block; touch-action:none;
-    cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 13 13' shape-rendering='crispEdges'%3E%3Crect width='13' height='13' fill='black'/%3E%3Cg fill='white'%3E%3Crect x='4' y='0' width='5' height='1'/%3E%3Crect x='2' y='1' width='2' height='1'/%3E%3Crect x='9' y='1' width='2' height='1'/%3E%3Crect x='1' y='2' width='2' height='1'/%3E%3Crect x='10' y='2' width='2' height='1'/%3E%3Crect x='1' y='3' width='1' height='1'/%3E%3Crect x='11' y='3' width='1' height='1'/%3E%3Crect x='0' y='4' width='1' height='1'/%3E%3Crect x='12' y='4' width='1' height='1'/%3E%3Crect x='0' y='5' width='1' height='1'/%3E%3Crect x='12' y='5' width='1' height='1'/%3E%3Crect x='0' y='6' width='1' height='1'/%3E%3Crect x='12' y='6' width='1' height='1'/%3E%3Crect x='0' y='7' width='1' height='1'/%3E%3Crect x='12' y='7' width='1' height='1'/%3E%3Crect x='0' y='8' width='1' height='1'/%3E%3Crect x='12' y='8' width='1' height='1'/%3E%3Crect x='1' y='9' width='1' height='1'/%3E%3Crect x='11' y='9' width='1' height='1'/%3E%3Crect x='1' y='10' width='2' height='1'/%3E%3Crect x='10' y='10' width='2' height='1'/%3E%3Crect x='2' y='11' width='2' height='1'/%3E%3Crect x='9' y='11' width='2' height='1'/%3E%3Crect x='4' y='12' width='5' height='1'/%3E%3Crect x='6' y='5' width='1' height='1'/%3E%3Crect x='5' y='6' width='3' height='1'/%3E%3Crect x='6' y='7' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E") 13 13, crosshair;
+    cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 13 13' shape-rendering='crispEdges'%3E%3Cg fill='white'%3E%3Crect x='4' y='0' width='5' height='1'/%3E%3Crect x='2' y='1' width='2' height='1'/%3E%3Crect x='9' y='1' width='2' height='1'/%3E%3Crect x='1' y='2' width='2' height='1'/%3E%3Crect x='10' y='2' width='2' height='1'/%3E%3Crect x='1' y='3' width='1' height='1'/%3E%3Crect x='11' y='3' width='1' height='1'/%3E%3Crect x='0' y='4' width='1' height='1'/%3E%3Crect x='12' y='4' width='1' height='1'/%3E%3Crect x='0' y='5' width='1' height='1'/%3E%3Crect x='12' y='5' width='1' height='1'/%3E%3Crect x='0' y='6' width='1' height='1'/%3E%3Crect x='12' y='6' width='1' height='1'/%3E%3Crect x='0' y='7' width='1' height='1'/%3E%3Crect x='12' y='7' width='1' height='1'/%3E%3Crect x='0' y='8' width='1' height='1'/%3E%3Crect x='12' y='8' width='1' height='1'/%3E%3Crect x='1' y='9' width='1' height='1'/%3E%3Crect x='11' y='9' width='1' height='1'/%3E%3Crect x='1' y='10' width='2' height='1'/%3E%3Crect x='10' y='10' width='2' height='1'/%3E%3Crect x='2' y='11' width='2' height='1'/%3E%3Crect x='9' y='11' width='2' height='1'/%3E%3Crect x='4' y='12' width='5' height='1'/%3E%3Crect x='6' y='5' width='1' height='1'/%3E%3Crect x='5' y='6' width='3' height='1'/%3E%3Crect x='6' y='7' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E") 13 13, crosshair;
   }
 </style>
 </head>
@@ -289,17 +290,22 @@ function fillFace(pts, color) {
 // original's `fuellen` floodfill). Each active cube draws its three viewer-facing
 // exposed faces (+Z top, −X left, −Y front) with per-orientation shading. They're
 // painted back-to-front (painter's algorithm) so nearer cubes naturally cover
-// farther ones — no transparency, no holes. Faces are drawn through rotateZ, which
-// maps cube (i,j,k) to rotated indices (j, G−1−i, k); the camera sits in the
-// (−x,−y,+z) octant of that rotated frame, so screen-depth ∝ (i'+j'−k') = (−i+j−k).
-// Sort by that key descending → far drawn first, near last.
+// farther ones — no transparency, no holes.
+//
+// Depth: faces go through rotateZ then project(), an OBLIQUE (cabinet) projection
+// whose projector direction is (−1,4,1) in the rotated frame (because S/ob = 4).
+// rotateZ maps cube (i,j,k)→rotated corner (y, G−x, z); dotting the rotated cube
+// centre with the projector gives screen-depth ∝ (−4i − j + k). Larger = farther,
+// so sort descending → far drawn first, near painted on top. (A pure −i ordering
+// is wrong: the oblique tilt contributes the −j and +k terms, and getting their
+// signs wrong lets occluded faces bleed through.)
 const FILL_TOP   = '#00d83a'; // +Z  brightest (lit from above)
 const FILL_LEFT  = '#009a2b'; // −X  mid
 const FILL_FRONT = '#006a1d'; // −Y  darkest
 function drawSolidFill() {
   const cubes = [];
   for (let i=0;i<G;i++) for (let j=0;j<G;j++) for (let k=0;k<G;k++)
-    if (activeState[i][j][k]) cubes.push({i,j,k,key:-i+j-k});
+    if (activeState[i][j][k]) cubes.push({i,j,k,key:-4*i-j+k});
   cubes.sort((a,b)=>b.key-a.key); // farthest first
   for (const {i,j,k} of cubes) {
     if(!isActive(activeState,i,j-1,k)) // −Y front face
