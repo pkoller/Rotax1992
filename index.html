@@ -276,44 +276,6 @@ function buildOccluders(active) {
   return occ;
 }
 
-function fillFace(pts, color) {
-  const poly = faceScreenPoly(pts);
-  ctx.beginPath();
-  ctx.moveTo(poly[0].x, poly[0].y);
-  for (let n=1;n<poly.length;n++) ctx.lineTo(poly[n].x, poly[n].y);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-}
-
-// Win payoff: flat-fill the solved solid's visible faces in a single green (echoing
-// the original's `fuellen` floodfill). Each active cube draws its three viewer-facing
-// exposed faces (+Z top, −X left, −Y front), painted back-to-front (painter's
-// algorithm) so nearer cubes cover farther ones — no transparency, no holes.
-//
-// Depth: faces go through rotateZ then project(), an OBLIQUE (cabinet) projection
-// whose projector direction is (−1,4,1) in the rotated frame (because S/ob = 4).
-// rotateZ maps cube (i,j,k)→rotated corner (y, G−x, z); dotting the rotated cube
-// centre with the projector gives screen-depth ∝ (−4i − j + k). Larger = farther,
-// so sort descending → far drawn first, near painted on top. (A pure −i ordering
-// is wrong: the oblique tilt contributes the −j and +k terms, and getting their
-// signs wrong lets occluded faces bleed through.)
-const FILL_COLOR = '#00a82e'; // flat green for every face
-function drawSolidFill() {
-  const cubes = [];
-  for (let i=0;i<G;i++) for (let j=0;j<G;j++) for (let k=0;k<G;k++)
-    if (activeState[i][j][k]) cubes.push({i,j,k,key:-4*i-j+k});
-  cubes.sort((a,b)=>b.key-a.key); // farthest first
-  for (const {i,j,k} of cubes) {
-    if(!isActive(activeState,i,j-1,k)) // −Y front face
-      fillFace([[i,j,k+1],[i+1,j,k+1],[i+1,j,k],[i,j,k]], FILL_COLOR);
-    if(!isActive(activeState,i-1,j,k)) // −X left face
-      fillFace([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]], FILL_COLOR);
-    if(!isActive(activeState,i,j,k+1)) // +Z top face
-      fillFace([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]], FILL_COLOR);
-  }
-}
-
 // Given a visible edge, subtract occluded parametric intervals and return the largest visible segment.
 // Returns {sx1,sy1,sx2,sy2} or null if fully hidden.
 function visibleSegment(e, occluders) {
@@ -661,7 +623,6 @@ function ptSegDist(px,py, x1,y1, x2,y2) {
 function getHitDist() { return G === 3 ? 5 : 10; }
 let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
 let debugHitZones = false;
-let solidFilled = false; // floodfill payoff shown once the puzzle is solved
 
 // Mirrors the original's mauscursor(false)/mauscursor(true) bracket around
 // drawing a traced line ("Damit Cursor nicht die Linie überdeckt").
@@ -692,7 +653,7 @@ function handleGameClick(mx,my) {
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
-      if(allSol && noWrong){ solidFilled=true; setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
+      if(allSol && noWrong){ setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
       return;
     }
     // Try wrong edges
@@ -709,7 +670,7 @@ function handleGameClick(mx,my) {
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
-      if(allSol && noWrong){ solidFilled=true; setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
+      if(allSol && noWrong){ setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
     }
     return;
   }
@@ -748,7 +709,6 @@ function handleGameClick(mx,my) {
   hideCursorBriefly();
   requestRender();
   if(tracedCount===totalVisible){
-    solidFilled=true;
     setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); }, 350);
   }
 }
@@ -762,7 +722,6 @@ function startNewPuzzle(difficulty) {
   puzzleEdgeCache   = getPuzzleEdges(activeState);
   totalVisible      = puzzleEdgeCache.length;
   tracedCount       = 0;
-  solidFilled       = false;
   const solEdgeSet  = new Set(puzzleEdgeCache.map(pe => pe.edge));
   wrongEdges = getEdges()
     .filter(e => !solEdgeSet.has(e))
@@ -969,7 +928,6 @@ function drawGame() {
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
-  if (solidFilled) drawSolidFill();
   // Traced edges (bright green thick)
   ctx.strokeStyle='#00FF00'; ctx.lineWidth=4; ctx.shadowColor='#00FF66'; ctx.shadowBlur=24;
   for(const pe of puzzleEdgeCache){
@@ -1147,8 +1105,6 @@ function drawComplete() {
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
-
-  drawSolidFill();
 
   ctx.strokeStyle='#00FF00'; ctx.lineWidth=4; ctx.shadowColor='#00FF66'; ctx.shadowBlur=24;
   for(const pe of puzzleEdgeCache){
