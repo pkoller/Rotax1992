@@ -262,57 +262,52 @@ function buildOccluders(active) {
     // −X face at X=i (exposed toward −X viewer); edge is in-front when edgeCoord <= coord
     if(!isActive(active,i-1,j,k))
       occ.push({ poly: faceScreenPoly([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]]),
-                 axis:'x', coord:i, above:false, i,j,k });
+                 axis:'x', coord:i, above:false });
     // −Y face at Y=j (reversed winding so clipSegPoly inward normals are correct)
     if(!isActive(active,i,j-1,k))
       occ.push({ poly: faceScreenPoly([[i,j,k+1],[i+1,j,k+1],[i+1,j,k],[i,j,k]]),
-                 axis:'y', coord:j, above:false, i,j,k });
+                 axis:'y', coord:j, above:false });
     // +Z face at Z=k+1 (reversed winding)
     if(!isActive(active,i,j,k+1))
       occ.push({ poly: faceScreenPoly([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]]),
-                 axis:'z', coord:k+1, above:true, i,j,k });
+                 axis:'z', coord:k+1, above:true });
   }
   return occ;
 }
 
-function tracePoly(poly) {
+function fillFace(pts, color) {
+  const poly = faceScreenPoly(pts);
   ctx.beginPath();
   ctx.moveTo(poly[0].x, poly[0].y);
-  for (let i=1;i<poly.length;i++) ctx.lineTo(poly[i].x, poly[i].y);
+  for (let n=1;n<poly.length;n++) ctx.lineTo(poly[n].x, poly[n].y);
   ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
 }
 
-// True if occluder O's plane sits in front of face F (mirrors the per-axis inFront
-// test in visibleSegment): same-axis faces compare coord directly; cross-axis faces
-// compare O's coord against F's owning-cube index along O's axis (always unambiguous
-// since cube faces sit on integer boundaries, so F never straddles O's plane).
-function occludesFace(O, F) {
-  if (O.axis === F.axis) return O.above ? O.coord > F.coord : O.coord < F.coord;
-  const value = (O.axis==='x' ? F.i : O.axis==='y' ? F.j : F.k) + 0.5;
-  const inFront = O.above ? value >= O.coord : value <= O.coord;
-  return !inFront;
-}
-
-// Win payoff: floodfill the solved solid's visible faces, like the original's
-// `fuellen` (setfillstyle/floodfill in green/darkgray once all 22 edges are traced).
-// Each face is clipped to itself, filled, then has every nearer occluder's polygon
-// punched out of it (destination-out) — exact per-pair occlusion, no depth-sort guesswork.
+// Win payoff: render the solved solid as an opaque, shaded 3D block (echoing the
+// original's `fuellen` floodfill). Each active cube draws its three viewer-facing
+// exposed faces (+Z top, −X left, −Y front) with per-orientation shading. They're
+// painted back-to-front (painter's algorithm) so nearer cubes naturally cover
+// farther ones — no transparency, no holes. Faces are drawn through rotateZ, which
+// maps cube (i,j,k) to rotated indices (j, G−1−i, k); the camera sits in the
+// (−x,−y,+z) octant of that rotated frame, so screen-depth ∝ (i'+j'−k') = (−i+j−k).
+// Sort by that key descending → far drawn first, near last.
+const FILL_TOP   = '#00d83a'; // +Z  brightest (lit from above)
+const FILL_LEFT  = '#009a2b'; // −X  mid
+const FILL_FRONT = '#006a1d'; // −Y  darkest
 function drawSolidFill() {
-  const occ = buildOccluders(activeState);
-  for (const F of occ) {
-    ctx.save();
-    tracePoly(F.poly);
-    ctx.clip();
-    ctx.fillStyle = F.axis === 'z' ? 'rgba(0,255,80,0.55)' : 'rgba(20,90,90,0.55)';
-    ctx.fill();
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = '#000';
-    for (const O of occ) {
-      if (O === F || !occludesFace(O, F)) continue;
-      tracePoly(O.poly);
-      ctx.fill();
-    }
-    ctx.restore();
+  const cubes = [];
+  for (let i=0;i<G;i++) for (let j=0;j<G;j++) for (let k=0;k<G;k++)
+    if (activeState[i][j][k]) cubes.push({i,j,k,key:-i+j-k});
+  cubes.sort((a,b)=>b.key-a.key); // farthest first
+  for (const {i,j,k} of cubes) {
+    if(!isActive(activeState,i,j-1,k)) // −Y front face
+      fillFace([[i,j,k+1],[i+1,j,k+1],[i+1,j,k],[i,j,k]], FILL_FRONT);
+    if(!isActive(activeState,i-1,j,k)) // −X left face
+      fillFace([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]], FILL_LEFT);
+    if(!isActive(activeState,i,j,k+1)) // +Z top face
+      fillFace([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]], FILL_TOP);
   }
 }
 
