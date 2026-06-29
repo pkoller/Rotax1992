@@ -14,7 +14,14 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#000; display:flex; justify-content:center; align-items:center; height:100vh; height:100dvh; overflow:hidden; }
-  canvas { display:block; cursor:crosshair; touch-action:none; }
+  /* PROJ12.PAS defines a custom `cursormaske`/`cursormuster` (lines 8-52) but never
+     actually installs them — EigenerGrafikCursor/Trafo are never called. So what the
+     original game really shows is the DOS mouse driver's stock graphics cursor: a
+     hollow circle with a center dot. Reproduced here as a chunky pixel-art ring+dot
+     (13x13 grid, hand-rasterized circle, crispEdges so it stays blocky like DOS). */
+  canvas { display:block; touch-action:none;
+    cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 13 13' shape-rendering='crispEdges'%3E%3Crect width='13' height='13' fill='black'/%3E%3Cg fill='white'%3E%3Crect x='4' y='0' width='5' height='1'/%3E%3Crect x='2' y='1' width='2' height='1'/%3E%3Crect x='9' y='1' width='2' height='1'/%3E%3Crect x='1' y='2' width='2' height='1'/%3E%3Crect x='10' y='2' width='2' height='1'/%3E%3Crect x='1' y='3' width='1' height='1'/%3E%3Crect x='11' y='3' width='1' height='1'/%3E%3Crect x='0' y='4' width='1' height='1'/%3E%3Crect x='12' y='4' width='1' height='1'/%3E%3Crect x='0' y='5' width='1' height='1'/%3E%3Crect x='12' y='5' width='1' height='1'/%3E%3Crect x='0' y='6' width='1' height='1'/%3E%3Crect x='12' y='6' width='1' height='1'/%3E%3Crect x='0' y='7' width='1' height='1'/%3E%3Crect x='12' y='7' width='1' height='1'/%3E%3Crect x='0' y='8' width='1' height='1'/%3E%3Crect x='12' y='8' width='1' height='1'/%3E%3Crect x='1' y='9' width='1' height='1'/%3E%3Crect x='11' y='9' width='1' height='1'/%3E%3Crect x='1' y='10' width='2' height='1'/%3E%3Crect x='10' y='10' width='2' height='1'/%3E%3Crect x='2' y='11' width='2' height='1'/%3E%3Crect x='9' y='11' width='2' height='1'/%3E%3Crect x='4' y='12' width='5' height='1'/%3E%3Crect x='6' y='5' width='1' height='1'/%3E%3Crect x='5' y='6' width='3' height='1'/%3E%3Crect x='6' y='7' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E") 13 13, crosshair;
+  }
 </style>
 </head>
 <body>
@@ -266,6 +273,25 @@ function buildOccluders(active) {
                  axis:'z', coord:k+1, above:true });
   }
   return occ;
+}
+
+// Win payoff: floodfill the solved solid's visible faces, like the original's
+// `fuellen` (setfillstyle/floodfill in green/darkgray once all 22 edges are traced).
+function drawSolidFill() {
+  const occ = buildOccluders(activeState).map(o => {
+    const depth = o.axis === 'z' ? o.coord : -o.coord; // painter's order, viewer-relative
+    const color = o.axis === 'z' ? 'rgba(0,255,80,0.55)' : 'rgba(20,90,90,0.55)';
+    return { ...o, depth, color };
+  });
+  occ.sort((a,b) => a.depth - b.depth); // farthest first, nearest drawn last (on top)
+  for (const o of occ) {
+    ctx.beginPath();
+    ctx.moveTo(o.poly[0].x, o.poly[0].y);
+    for (let i=1;i<o.poly.length;i++) ctx.lineTo(o.poly[i].x, o.poly[i].y);
+    ctx.closePath();
+    ctx.fillStyle = o.color;
+    ctx.fill();
+  }
 }
 
 // Given a visible edge, subtract occluded parametric intervals and return the largest visible segment.
@@ -615,6 +641,16 @@ function ptSegDist(px,py, x1,y1, x2,y2) {
 function getHitDist() { return G === 3 ? 5 : 10; }
 let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
 let debugHitZones = false;
+let solidFilled = false; // floodfill payoff shown once the puzzle is solved
+
+// Mirrors the original's mauscursor(false)/mauscursor(true) bracket around
+// drawing a traced line ("Damit Cursor nicht die Linie überdeckt").
+let _cursorRestoreTimer = null;
+function hideCursorBriefly() {
+  canvas.style.cursor = 'none';
+  clearTimeout(_cursorRestoreTimer);
+  _cursorRestoreTimer = setTimeout(() => { canvas.style.cursor = ''; }, 120);
+}
 
 function handleGameClick(mx,my) {
   if(screen !== STATE.PLAYING) return;
@@ -632,10 +668,11 @@ function handleGameClick(mx,my) {
       puzzleEdgeCache[bestIdx].traced = !puzzleEdgeCache[bestIdx].traced;
       tracedCount = puzzleEdgeCache.filter(pe=>pe.traced).length;
       beep(1000,90);
+      if(puzzleEdgeCache[bestIdx].traced) hideCursorBriefly();
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
-      if(allSol && noWrong){ setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
+      if(allSol && noWrong){ solidFilled=true; setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
       return;
     }
     // Try wrong edges
@@ -648,10 +685,11 @@ function handleGameClick(mx,my) {
     if(wIdx>=0){
       wrongEdges[wIdx].active = !wrongEdges[wIdx].active;
       beep(1000,90);
+      if(wrongEdges[wIdx].active) hideCursorBriefly();
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
-      if(allSol && noWrong){ setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
+      if(allSol && noWrong){ solidFilled=true; setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); },350); }
     }
     return;
   }
@@ -687,8 +725,10 @@ function handleGameClick(mx,my) {
   puzzleEdgeCache[bestIdx].traced=true;
   tracedCount++;
   beep(1000,90);
+  hideCursorBriefly();
   requestRender();
   if(tracedCount===totalVisible){
+    solidFilled=true;
     setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); }, 350);
   }
 }
@@ -702,6 +742,7 @@ function startNewPuzzle(difficulty) {
   puzzleEdgeCache   = getPuzzleEdges(activeState);
   totalVisible      = puzzleEdgeCache.length;
   tracedCount       = 0;
+  solidFilled       = false;
   const solEdgeSet  = new Set(puzzleEdgeCache.map(pe => pe.edge));
   wrongEdges = getEdges()
     .filter(e => !solEdgeSet.has(e))
@@ -908,6 +949,7 @@ function drawGame() {
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
+  if (solidFilled) drawSolidFill();
   // Traced edges (bright green thick)
   ctx.strokeStyle='#00FF00'; ctx.lineWidth=4; ctx.shadowColor='#00FF66'; ctx.shadowBlur=24;
   for(const pe of puzzleEdgeCache){
@@ -1085,6 +1127,8 @@ function drawComplete() {
     const p2=project(r2.x,r2.y,r2.z,PUZZLE_OX,PUZZLE_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
+
+  drawSolidFill();
 
   ctx.strokeStyle='#00FF00'; ctx.lineWidth=4; ctx.shadowColor='#00FF66'; ctx.shadowBlur=24;
   for(const pe of puzzleEdgeCache){
