@@ -286,11 +286,10 @@ function fillFace(pts, color) {
   ctx.fill();
 }
 
-// Win payoff: render the solved solid as an opaque, shaded 3D block (echoing the
-// original's `fuellen` floodfill). Each active cube draws its three viewer-facing
-// exposed faces (+Z top, −X left, −Y front) with per-orientation shading. They're
-// painted back-to-front (painter's algorithm) so nearer cubes naturally cover
-// farther ones — no transparency, no holes.
+// Win payoff: flat-fill the solved solid's visible faces in a single green (echoing
+// the original's `fuellen` floodfill). Each active cube draws its three viewer-facing
+// exposed faces (+Z top, −X left, −Y front), painted back-to-front (painter's
+// algorithm) so nearer cubes cover farther ones — no transparency, no holes.
 //
 // Depth: faces go through rotateZ then project(), an OBLIQUE (cabinet) projection
 // whose projector direction is (−1,4,1) in the rotated frame (because S/ob = 4).
@@ -299,9 +298,7 @@ function fillFace(pts, color) {
 // so sort descending → far drawn first, near painted on top. (A pure −i ordering
 // is wrong: the oblique tilt contributes the −j and +k terms, and getting their
 // signs wrong lets occluded faces bleed through.)
-const FILL_TOP   = '#00d83a'; // +Z  brightest (lit from above)
-const FILL_LEFT  = '#009a2b'; // −X  mid
-const FILL_FRONT = '#006a1d'; // −Y  darkest
+const FILL_COLOR = '#00a82e'; // flat green for every face
 function drawSolidFill() {
   const cubes = [];
   for (let i=0;i<G;i++) for (let j=0;j<G;j++) for (let k=0;k<G;k++)
@@ -309,11 +306,11 @@ function drawSolidFill() {
   cubes.sort((a,b)=>b.key-a.key); // farthest first
   for (const {i,j,k} of cubes) {
     if(!isActive(activeState,i,j-1,k)) // −Y front face
-      fillFace([[i,j,k+1],[i+1,j,k+1],[i+1,j,k],[i,j,k]], FILL_FRONT);
+      fillFace([[i,j,k+1],[i+1,j,k+1],[i+1,j,k],[i,j,k]], FILL_COLOR);
     if(!isActive(activeState,i-1,j,k)) // −X left face
-      fillFace([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]], FILL_LEFT);
+      fillFace([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]], FILL_COLOR);
     if(!isActive(activeState,i,j,k+1)) // +Z top face
-      fillFace([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]], FILL_TOP);
+      fillFace([[i,j+1,k+1],[i+1,j+1,k+1],[i+1,j,k+1],[i,j,k+1]], FILL_COLOR);
   }
 }
 
