@@ -14,7 +14,15 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#000; display:flex; justify-content:center; align-items:center; height:100vh; height:100dvh; overflow:hidden; }
-  canvas { display:block; cursor:crosshair; touch-action:none; }
+  /* PROJ12.PAS defines a custom `cursormaske`/`cursormuster` (lines 8-52) but never
+     actually installs them — EigenerGrafikCursor/Trafo are never called. So what the
+     original game really shows is the DOS mouse driver's stock graphics cursor: a
+     hollow circle with a center cross. Reproduced here as a chunky pixel-art ring+cross
+     (13x13 grid, hand-rasterized circle, crispEdges so it stays blocky like DOS).
+     Background is transparent so only the ring and center cross are visible. */
+  canvas { display:block; touch-action:none;
+    cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 13 13' shape-rendering='crispEdges'%3E%3Cg fill='white'%3E%3Crect x='4' y='0' width='5' height='1'/%3E%3Crect x='2' y='1' width='2' height='1'/%3E%3Crect x='9' y='1' width='2' height='1'/%3E%3Crect x='1' y='2' width='2' height='1'/%3E%3Crect x='10' y='2' width='2' height='1'/%3E%3Crect x='1' y='3' width='1' height='1'/%3E%3Crect x='11' y='3' width='1' height='1'/%3E%3Crect x='0' y='4' width='1' height='1'/%3E%3Crect x='12' y='4' width='1' height='1'/%3E%3Crect x='0' y='5' width='1' height='1'/%3E%3Crect x='12' y='5' width='1' height='1'/%3E%3Crect x='0' y='6' width='1' height='1'/%3E%3Crect x='12' y='6' width='1' height='1'/%3E%3Crect x='0' y='7' width='1' height='1'/%3E%3Crect x='12' y='7' width='1' height='1'/%3E%3Crect x='0' y='8' width='1' height='1'/%3E%3Crect x='12' y='8' width='1' height='1'/%3E%3Crect x='1' y='9' width='1' height='1'/%3E%3Crect x='11' y='9' width='1' height='1'/%3E%3Crect x='1' y='10' width='2' height='1'/%3E%3Crect x='10' y='10' width='2' height='1'/%3E%3Crect x='2' y='11' width='2' height='1'/%3E%3Crect x='9' y='11' width='2' height='1'/%3E%3Crect x='4' y='12' width='5' height='1'/%3E%3Crect x='6' y='5' width='1' height='1'/%3E%3Crect x='5' y='6' width='3' height='1'/%3E%3Crect x='6' y='7' width='1' height='1'/%3E%3C/g%3E%3C/svg%3E") 13 13, crosshair;
+  }
 </style>
 </head>
 <body>
@@ -636,6 +644,15 @@ function getHitDist() { return G === 3 ? 5 : 10; }
 let missFlash = null; // {segIdx, t} — edge to flash red briefly on miss
 let debugHitZones = false;
 
+// Mirrors the original's mauscursor(false)/mauscursor(true) bracket around
+// drawing a traced line ("Damit Cursor nicht die Linie überdeckt").
+let _cursorRestoreTimer = null;
+function hideCursorBriefly() {
+  canvas.style.cursor = 'none';
+  clearTimeout(_cursorRestoreTimer);
+  _cursorRestoreTimer = setTimeout(() => { canvas.style.cursor = ''; }, 120);
+}
+
 function handleGameClick(mx,my) {
   if(screen !== STATE.PLAYING) return;
   if(_audioCtx.state==='suspended') _audioCtx.resume();
@@ -652,6 +669,7 @@ function handleGameClick(mx,my) {
       puzzleEdgeCache[bestIdx].traced = !puzzleEdgeCache[bestIdx].traced;
       tracedCount = puzzleEdgeCache.filter(pe=>pe.traced).length;
       beep(1000,90);
+      if(puzzleEdgeCache[bestIdx].traced) hideCursorBriefly();
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
@@ -668,6 +686,7 @@ function handleGameClick(mx,my) {
     if(wIdx>=0){
       wrongEdges[wIdx].active = !wrongEdges[wIdx].active;
       beep(1000,90);
+      if(wrongEdges[wIdx].active) hideCursorBriefly();
       requestRender();
       const allSol = puzzleEdgeCache.every(pe=>pe.traced);
       const noWrong = wrongEdges.every(we=>!we.active);
@@ -707,6 +726,7 @@ function handleGameClick(mx,my) {
   puzzleEdgeCache[bestIdx].traced=true;
   tracedCount++;
   beep(1000,90);
+  hideCursorBriefly();
   requestRender();
   if(tracedCount===totalVisible){
     setTimeout(()=>{ victorySound(); setScreen(STATE.COMPLETE); }, 350);
@@ -1144,5 +1164,8 @@ resizeCanvas();
 setScreen(STATE.INTRO);
 loop();
 </script>
+<!-- Optional local-only dev hooks (git-ignored, absent in normal checkouts, so this
+     loads nothing for anyone else). Used locally for debug tools like debug.local.js. -->
+<script>(function(){var s=document.createElement('script');s.src='debug.local.js';s.onerror=function(){};document.body.appendChild(s);})();</script>
 </body>
 </html>
