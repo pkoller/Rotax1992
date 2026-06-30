@@ -2,3 +2,10 @@
 
 # Local-only dev tools (e.g. the 9999 solve cheat) — never committed
 debug.local.js
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
