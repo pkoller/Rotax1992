@@ -584,7 +584,7 @@ let puzzleEdgeCache   = []; // [{edge, seg, traced}]
 let totalVisible      = 0;
 let tracedCount       = 0;
 let wrongEdges        = []; // [{seg, active}] — arcade mode only
-const MODE_BTN  = {x:12, y:76, w:100, h:28};
+const MODE_BTN  = {x:133, y:56, w:100, h:28};
 let arcadeMode  = false;
 let pendingConfirmAction = null; // null | 'mode' | 'menu'
 
@@ -774,6 +774,7 @@ function render() {
   else if (screen === STATE.PLAYING)    drawGame();
   else if (screen === STATE.COMPLETE)   drawComplete();
   else if (screen === STATE.ABOUT)      drawAbout();
+  drawSettingsGroup();
   drawSoundBtn();
   drawModeBtn();
   if (screen !== STATE.ABOUT) drawAboutBtn();
@@ -1007,7 +1008,7 @@ const COMPLETE_BTNS=[
 ];
 
 const MENU_BTN = {x:12, y:12, w:100, h:28};
-const SOUND_BTN = {x:12, y:44, w:100, h:28};
+const SOUND_BTN = {x:133, y:24, w:100, h:28};
 const ABOUT_BTN = {x:688, y:12, w:100, h:28};
 const ABOUT_BACK_BTN = {x:350, y:470, w:100, h:36};
 
@@ -1055,6 +1056,19 @@ function drawAbout() {
   ctx.fillStyle='#B5514D'; ctx.font='15px Courier New'; ctx.textAlign='center';
   ctx.fillText('ZURÜCK', b.x+b.w/2, b.y+23);
   ctx.textAlign='left';
+}
+
+function drawSettingsGroup() {
+  const gx=124, gy=12, gw=118, gh=82;
+  ctx.strokeStyle='#444'; ctx.lineWidth=1;
+  ctx.strokeRect(gx, gy, gw, gh);
+  ctx.font='10px Courier New'; ctx.textAlign='left';
+  const label='EINSTELLUNGEN';
+  const tw=ctx.measureText(label).width;
+  ctx.fillStyle='#000';
+  ctx.fillRect(gx+7, gy-5, tw+6, 10);
+  ctx.fillStyle='#666';
+  ctx.fillText(label, gx+10, gy+3);
 }
 
 function drawSoundBtn() {
