@@ -1028,20 +1028,22 @@ function drawAbout() {
   ctx.textAlign='left';
 
   const lines = [
-    ['#00AA00', 'ROTAXIS — Körper-Nachzeichner ist ein 3D-Wahrnehmungsspiel.'],
-    ['#00AA00', 'Links siehst du einen Körper aus aktivierten Würfeln (Urkörper).'],
-    ['#00AA00', 'Rechts erscheint derselbe Körper, um 90° um die Z-Achse gedreht'],
-    ['#00AA00', '(Dünnkörper). Klicke alle sichtbaren Kanten des gedrehten Körpers nach.'],
+    ['#00FF66', 'ROTAXIS — Körper-Nachzeichner ist ein 3D-Wahrnehmungsspiel.'],
+    ['#00FF66', 'Links siehst du einen Körper aus aktivierten Würfeln (Urkörper).'],
+    ['#00FF66', 'Rechts erscheint derselbe Körper, um 90° um die Z-Achse gedreht'],
+    ['#00FF66', '(Dünnkörper). Klicke alle sichtbaren Kanten des gedrehten Körpers nach.'],
     ['#888',    ''],
     ['#FFFF00', 'Tastenkürzel:'],
-    ['#888',    'M  —  zurück zum Menü'],
-    ['#888',    'S  —  Sound an/aus'],
-    ['#888',    'N  —  Training/Profi-Modus wechseln'],
-    ['#888',    '1–4  —  Schwierigkeit wählen (auch während des Spiels)'],
-    ['#888',    ''],
-    ['#00FF66', 'ROTAXIS basiert auf einem Turbo-Pascal-Programm aus dem Jahr 1992.'],
-    ['#00FF66', 'Es wurde von einem österreichischen Lehrer entwickelt, um Schülern'],
-    ['#00FF66', 'das räumliche Vorstellungsvermögen (3D-Wahrnehmung) zu vermitteln.'],
+    ['#888',    'M — Menü   |   S — Sound an/aus   |   N — Modus wechseln'],
+    ['#888',    '1–4 — Schwierigkeit wählen (auch während des Spiels)'],
+    ['#FFFF00', 'Modi:'],
+    ['#888',    'TRAINING — Falsche Klicks werden angezeigt, richtige Kanten bleiben'],
+    ['#888',    'fixiert. Rätsel sind stets eindeutig lösbar.'],
+    ['#888',    'PROFI — Klicks schalten Kanten ein/aus, auch falsche. Rätsel können'],
+    ['#888',    '"unsichtbare" Würfel enthalten.'],
+	['#888',    ''],
+    ['#00FF66', 'ROTAXIS basiert auf einem Turbo-Pascal-Programm aus dem Jahr 1992,'],
+    ['#00FF66', 'entwickelt von einem österreichischen Lehrer zur Vermittlung von 3D-Wahrnehmung.'],
   ];
   ctx.font='13px Courier New'; ctx.textAlign='left';
   let y = 130;
