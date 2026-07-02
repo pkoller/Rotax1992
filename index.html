@@ -419,7 +419,10 @@ function generatePuzzle(difficulty) {
       const cubes=shuffledCubes();
       for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
     }
-    if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) { activateInvisibleCubes(a); return a; }
+    if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) {
+      if (!arcadeMode) activateInvisibleCubes(a);
+      return a;
+    }
   }
   // fallback: single cube
   const a=makeActive(); a[0][0][0]=true; return a;
