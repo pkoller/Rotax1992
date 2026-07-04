@@ -513,7 +513,20 @@ const DIFF_BTNS = [
   { label:'SCHWER',   sub:'3–6 WÜRFEL  |  BELIEBIG',     diff:'hard',     x:260,y:296,w:280,h:48 },
   { label:'WAHNSINN', sub:'3×3×3 GITTER  |  ZUFÄLLIG',  diff:'wahnsinn', x:260,y:366,w:280,h:48, danger:true },
 ];
-let hoveredDiff = null;
+let hoveredBtn = null;
+
+// Buttons that are currently clickable (mirrors handleClick's routing)
+function hoverTargets(){
+  if(pendingConfirmAction) return [MODE_CONFIRM_OK_BTN, MODE_CONFIRM_CANCEL_BTN];
+  const t=[SOUND_BTN, MODE_BTN];
+  if(screen!==STATE.ABOUT) t.push(ABOUT_BTN);
+  if(screen===STATE.ABOUT)      t.push(MENU_BTN, ABOUT_BACK_BTN);
+  else if(screen===STATE.INTRO) t.push(MENU_BTN);
+  else if(screen===STATE.DIFFICULTY) t.push(...DIFF_BTNS);
+  else if(screen===STATE.PLAYING)    t.push(MENU_BTN);
+  else if(screen===STATE.COMPLETE)   t.push(MENU_BTN, ...COMPLETE_BTNS);
+  return t;
+}
 
 // ── Input ──
 let blinkOn = true;
@@ -548,12 +561,11 @@ document.addEventListener('keydown', e => {
 });
 
 canvas.addEventListener('mousemove', e => {
-  if(screen!==STATE.DIFFICULTY) return;
   const p=toGame(e.clientX,e.clientY);
   const mx=p.x, my=p.y;
-  const prev=hoveredDiff;
-  hoveredDiff=DIFF_BTNS.find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h)||null;
-  if(hoveredDiff!==prev) requestRender();
+  const prev=hoveredBtn;
+  hoveredBtn=hoverTargets().find(b=>mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h)||null;
+  if(hoveredBtn!==prev) requestRender();
 });
 
 canvas.addEventListener('click', e => {
@@ -878,6 +890,9 @@ function loop() {
 }
 
 function render() {
+  // Drop hover state that no longer points at a clickable button
+  // (screen changed or a confirm dialog opened/closed under the cursor)
+  if (hoveredBtn && !hoverTargets().includes(hoveredBtn)) hoveredBtn = null;
   const dpr = window.devicePixelRatio || 1;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#000';
@@ -933,14 +948,8 @@ function drawConfirmDialog() {
     ctx.fillText('aktuelle Fortschritt verloren.', 400, by+76);
   }
 
-  const ok=MODE_CONFIRM_OK_BTN, cancel=MODE_CONFIRM_CANCEL_BTN;
-  ctx.strokeStyle='#B5514D'; ctx.strokeRect(ok.x,ok.y,ok.w,ok.h);
-  ctx.fillStyle='#B5514D'; ctx.font='14px Courier New';
-  ctx.fillText('OK', ok.x+ok.w/2, ok.y+23);
-
-  ctx.strokeStyle='#888'; ctx.strokeRect(cancel.x,cancel.y,cancel.w,cancel.h);
-  ctx.fillStyle='#888'; ctx.font='13px Courier New';
-  ctx.fillText(isMode ? (arcadeMode ? 'WEITER PROFI' : 'WEITER TRAINING') : 'WEITER SPIELEN', cancel.x+cancel.w/2, cancel.y+23);
+  drawBtn(MODE_CONFIRM_OK_BTN, 'OK', '#B5514D', '14px Courier New');
+  drawBtn(MODE_CONFIRM_CANCEL_BTN, isMode ? (arcadeMode ? 'WEITER PROFI' : 'WEITER TRAINING') : 'WEITER SPIELEN', '#888', '13px Courier New');
   ctx.textAlign='left';
 }
 
@@ -1052,17 +1061,8 @@ function drawDifficulty() {
   drawAxisDecoration(80, 490);
 
   for(const btn of DIFF_BTNS){
-    const hot=(btn===hoveredDiff);
-    const accent = btn.danger ? '#FF3333' : '#FFFF00';
-    ctx.fillStyle=hot?accent:'#000';
-    ctx.fillRect(btn.x,btn.y,btn.w,btn.h);
-    ctx.strokeStyle=accent; ctx.lineWidth=1;
-    ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
-    ctx.fillStyle=hot?'#000':accent;
-    ctx.font='20px Courier New'; ctx.textAlign='center';
-    ctx.fillText(btn.label, btn.x+btn.w/2, btn.y+btn.h/2+7);
+    drawBtn(btn, btn.label, btn.danger ? '#FF3333' : '#FFFF00', '20px Courier New', btn.h/2+7);
   }
-  ctx.textAlign='left';
 }
 
 const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', wahnsinn:'WAHNSINN'};
@@ -1161,13 +1161,22 @@ const SOUND_BTN = {x:133, y:24, w:100, h:28};
 const ABOUT_BTN = {x:688, y:12, w:100, h:28};
 const ABOUT_BACK_BTN = {x:350, y:470, w:100, h:36};
 
-function drawAboutBtn() {
-  const b = ABOUT_BTN;
-  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
+// Shared button renderer with the difficulty-menu hover style:
+// hovered buttons get a filled accent background and black text.
+function drawBtn(b, label, accent, font, textDy) {
+  const hot = (b === hoveredBtn);
+  ctx.fillStyle = hot ? accent : '#000';
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+  ctx.strokeStyle = accent; ctx.lineWidth = 1;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
-  ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText('ÜBER', b.x + b.w/2, b.y + 19);
+  ctx.fillStyle = hot ? '#000' : accent;
+  ctx.font = font; ctx.textAlign = 'center';
+  ctx.fillText(label, b.x + b.w/2, b.y + (textDy !== undefined ? textDy : b.h/2 + 5));
   ctx.textAlign = 'left';
+}
+
+function drawAboutBtn() {
+  drawBtn(ABOUT_BTN, 'ÜBER', '#888', '13px Courier New');
 }
 
 function drawAbout() {
@@ -1202,11 +1211,7 @@ function drawAbout() {
     y += 22;
   }
 
-  const b = ABOUT_BACK_BTN;
-  ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(b.x,b.y,b.w,b.h);
-  ctx.fillStyle='#B5514D'; ctx.font='15px Courier New'; ctx.textAlign='center';
-  ctx.fillText('ZURÜCK', b.x+b.w/2, b.y+23);
-  ctx.textAlign='left';
+  drawBtn(ABOUT_BACK_BTN, 'ZURÜCK', '#B5514D', '15px Courier New');
 }
 
 function drawSettingsGroup() {
@@ -1223,21 +1228,11 @@ function drawSettingsGroup() {
 }
 
 function drawSoundBtn() {
-  const b = SOUND_BTN;
-  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
-  ctx.strokeRect(b.x, b.y, b.w, b.h);
-  ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText('TON ' + (soundEnabled ? 'AN' : 'AUS'), b.x + b.w/2, b.y + 19);
-  ctx.textAlign = 'left';
+  drawBtn(SOUND_BTN, 'TON ' + (soundEnabled ? 'AN' : 'AUS'), '#888', '13px Courier New');
 }
 
 function drawModeBtn() {
-  const b = MODE_BTN;
-  ctx.strokeStyle = '#888'; ctx.lineWidth = 1;
-  ctx.strokeRect(b.x, b.y, b.w, b.h);
-  ctx.fillStyle = '#888'; ctx.font = '13px Courier New'; ctx.textAlign = 'center';
-  ctx.fillText(arcadeMode ? 'PROFI' : 'TRAINING', b.x + b.w/2, b.y + 19);
-  ctx.textAlign = 'left';
+  drawBtn(MODE_BTN, arcadeMode ? 'PROFI' : 'TRAINING', '#888', '13px Courier New');
 }
 
 function drawHitZones() {
@@ -1263,10 +1258,7 @@ function drawHitZones() {
 }
 
 function drawMenuBtn() {
-  ctx.strokeStyle='#B5514D'; ctx.lineWidth=1; ctx.strokeRect(MENU_BTN.x,MENU_BTN.y,MENU_BTN.w,MENU_BTN.h);
-  ctx.fillStyle='#B5514D'; ctx.font='13px Courier New'; ctx.textAlign='center';
-  ctx.fillText('MENÜ', MENU_BTN.x+MENU_BTN.w/2, MENU_BTN.y+19);
-  ctx.textAlign='left';
+  drawBtn(MENU_BTN, 'MENÜ', '#B5514D', '13px Courier New');
 }
 
 function drawComplete() {
@@ -1320,11 +1312,8 @@ function drawComplete() {
   ctx.textAlign='left';
 
   for(const btn of COMPLETE_BTNS){
-    ctx.strokeStyle='#FFFF00'; ctx.lineWidth=1; ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
-    ctx.fillStyle='#FFFF00'; ctx.font='15px Courier New'; ctx.textAlign='center';
-    ctx.fillText(btn.label, btn.x+btn.w/2, btn.y+23);
+    drawBtn(btn, btn.label, '#FFFF00', '15px Courier New');
   }
-  ctx.textAlign='left';
 
   drawMenuBtn();
 }
