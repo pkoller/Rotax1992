@@ -991,7 +991,7 @@ function drawAxisDecoration(lineY1, lineY2) {
   ctx.setLineDash([]);
 }
 
-function drawRotaxLogo(startX, startY, S) {
+function drawRotaxLogo(startY, S) {
   const GLYPHS = {
     R:['11110','10001','10001','11110','10100','10010','10001'],
     O:['01110','10001','10001','10001','10001','10001','01110'],
@@ -1002,8 +1002,10 @@ function drawRotaxLogo(startX, startY, S) {
     S:['01111','10000','10000','01110','00001','00001','11110'],
   };
   const GAP=2;
+  const LETTERS=['R','O','T','A','X','I','S'];
+  const startX=Math.round((800-(LETTERS.length*(5*S+GAP)-GAP))/2);
   ctx.fillStyle='#00AA00';
-  ['R','O','T','A','X','I','S'].forEach((ch,ci)=>{
+  LETTERS.forEach((ch,ci)=>{
     GLYPHS[ch].forEach((row,ri)=>{
       [...row].forEach((px,pi)=>{
         if(px==='1') ctx.fillRect(startX+ci*(5*S+GAP)+pi*S, startY+ri*S, S-1, S-1);
@@ -1014,7 +1016,7 @@ function drawRotaxLogo(startX, startY, S) {
 
 function drawIntro() {
   // ROTAX at top
-  drawRotaxLogo(321, 20, 6);
+  drawRotaxLogo(20, 6);
 
   // Rotation axis decoration (start below the logo)
   drawAxisDecoration(80, 490);
@@ -1048,7 +1050,7 @@ function drawIntro() {
 }
 
 function drawDifficulty() {
-  drawRotaxLogo(321, 20, 6);
+  drawRotaxLogo(20, 6);
   drawAxisDecoration(80, 490);
 
   for(const btn of DIFF_BTNS){
@@ -1074,7 +1076,7 @@ function drawDifficultyLabel() {
 }
 
 function drawGame() {
-  drawRotaxLogo(321, 20, 6);
+  drawRotaxLogo(20, 6);
   drawAxisDecoration(80, 495);
 
   drawDifficultyLabel();
@@ -1272,7 +1274,7 @@ function drawMenuBtn() {
 function drawComplete() {
   ctx.fillStyle='#000'; ctx.fillRect(0,0,800,530);
 
-  drawRotaxLogo(321, 20, 6);
+  drawRotaxLogo(20, 6);
   drawAxisDecoration(80, 495);
 
   drawDifficultyLabel();
