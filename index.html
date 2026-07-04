@@ -1016,14 +1016,21 @@ function drawIntro() {
   // ROTAX at top
   drawRotaxLogo(321, 20, 6);
 
+  // Rotation axis decoration (start below the logo)
+  drawAxisDecoration(80, 490);
+
+  // Soft black backdrop so the axis line doesn't cut through the subtitle
+  ctx.save();
+  ctx.shadowColor='#000'; ctx.shadowBlur=12;
+  ctx.fillStyle='rgba(0,0,0,0.9)';
+  ctx.fillRect(275, 320, 250, 55);
+  ctx.restore();
+
   // Subtitle and credits
   ctx.fillStyle='#FFFF00'; ctx.font='18px Courier New'; ctx.textAlign='center';
   ctx.fillText('KÖRPER-NACHZEICHNER', 400, 340);
   ctx.fillStyle='#00AA00'; ctx.font='12px Courier New';
   ctx.fillText('TURBO PASCAL EDITION  ©1992', 400, 365);
-
-  // Rotation axis decoration (start below the logo)
-  drawAxisDecoration(80, 490);
 
   // Blinking prompt
   if(blinkOn){
