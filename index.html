@@ -1032,8 +1032,13 @@ function drawIntro() {
   ctx.fillStyle='#00AA00'; ctx.font='12px Courier New';
   ctx.fillText('TURBO PASCAL EDITION  ©1992', 400, 365);
 
-  // Blinking prompt
+  // Blinking prompt (backdrop blinks along with the text)
   if(blinkOn){
+    ctx.save();
+    ctx.shadowColor='#000'; ctx.shadowBlur=12;
+    ctx.fillStyle='rgba(0,0,0,0.9)';
+    ctx.fillRect(320, 425, 160, 30);
+    ctx.restore();
     ctx.fillStyle='#FFFFFF'; ctx.font='16px Courier New';
     ctx.fillText('PRESS ANY KEY', 400, 445);
   }
