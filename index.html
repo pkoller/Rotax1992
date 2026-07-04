@@ -933,16 +933,19 @@ function drawDifficulty() {
   ctx.textAlign='left';
 }
 
+const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', wahnsinn:'WAHNSINN'};
+
+function drawDifficultyLabel() {
+  ctx.fillStyle='#888'; ctx.font='11px Courier New'; ctx.textAlign='center';
+  ctx.fillText(DIFF_LABELS[currentDifficulty], 400, 510);
+  ctx.textAlign='left';
+}
+
 function drawGame() {
   drawRotaxLogo(321, 20, 6);
   drawAxisDecoration(80, 495);
 
-
-  // Difficulty label
-  const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', wahnsinn:'WAHNSINN'};
-  ctx.fillStyle='#888'; ctx.font='11px Courier New'; ctx.textAlign='center';
-  ctx.fillText(DIFF_LABELS[currentDifficulty], 400, 510);
-  ctx.textAlign='left';
+  drawDifficultyLabel();
 
   // ── Preview panel (Urkörper) ──
   // 1. Faint full wireframe (all edges in preview coords)
@@ -1139,6 +1142,8 @@ function drawComplete() {
 
   drawRotaxLogo(321, 20, 6);
   drawAxisDecoration(80, 495);
+
+  drawDifficultyLabel();
 
   ctx.strokeStyle='#777777'; ctx.lineWidth=1;
   for(const e of getEdges()){
