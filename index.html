@@ -442,6 +442,20 @@ function activateInvisibleCubes(a) {
       if (getPreviewEdges(test).length === baseCount) { a[i][j][k] = true; changed = true; }
     }
   }
+  // A fully active block is no puzzle at all. If the fixpoint filled every
+  // cube, carve one visible cube back out (one whose removal changes the
+  // preview edges) so a real shape remains to trace.
+  if (countActive(a) === G*G*G) {
+    const baseCount = getPreviewEdges(a).length;
+    for (const [i,j,k] of shuffledCubes()) {
+      const test = cloneActive(a);
+      test[i][j][k] = false;
+      if (getPreviewEdges(test).length !== baseCount && getPuzzleEdges(test).length > 0) {
+        a[i][j][k] = false;
+        break;
+      }
+    }
+  }
 }
 
 function isValidPuzzle(a,difficulty){
