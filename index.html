@@ -1042,6 +1042,21 @@ function drawRotaxLogo(startY, S) {
   });
 }
 
+// Frosted backdrop: blur what's already drawn inside the rect, then dim it
+// with the same rgba(0,0,0,0.7) the zoom indicator uses, so lines behind
+// (e.g. the rotation axis) stay visible but blurred.
+function frostedRect(x, y, w, h) {
+  const t = ctx.getTransform();
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  // brightness compensates for the blur spreading thin lines + the dim overlay
+  ctx.filter = 'blur(2px) brightness(4)';
+  ctx.drawImage(canvas, t.a*x + t.e, t.d*y + t.f, t.a*w, t.d*h, x, y, w, h);
+  ctx.restore();
+  ctx.fillStyle = 'rgba(0,0,0,0.7)';
+  ctx.fillRect(x, y, w, h);
+}
+
 function drawIntro() {
   // ROTAX at top
   drawRotaxLogo(20, 6);
@@ -1049,12 +1064,8 @@ function drawIntro() {
   // Rotation axis decoration (start below the logo)
   drawAxisDecoration(80, 490);
 
-  // Soft black backdrop so the axis line doesn't cut through the subtitle
-  ctx.save();
-  ctx.shadowColor='#000'; ctx.shadowBlur=12;
-  ctx.fillStyle='rgba(0,0,0,0.9)';
-  ctx.fillRect(275, 320, 250, 55);
-  ctx.restore();
+  // Frosted backdrop so the axis line shows through the subtitle, blurred
+  frostedRect(275, 320, 250, 55);
 
   // Subtitle and credits
   ctx.fillStyle='#FFFF00'; ctx.font='18px Courier New'; ctx.textAlign='center';
@@ -1064,11 +1075,7 @@ function drawIntro() {
 
   // Blinking prompt (backdrop blinks along with the text)
   if(blinkOn){
-    ctx.save();
-    ctx.shadowColor='#000'; ctx.shadowBlur=12;
-    ctx.fillStyle='rgba(0,0,0,0.9)';
-    ctx.fillRect(320, 425, 160, 30);
-    ctx.restore();
+    frostedRect(320, 425, 160, 30);
     ctx.fillStyle='#FFFFFF'; ctx.font='16px Courier New';
     ctx.fillText('PRESS ANY KEY', 400, 445);
   }
