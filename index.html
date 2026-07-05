@@ -33,16 +33,29 @@ const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
 let gameScale = 1;
+// Letterbox offsets (CSS px) of the centered 800×530 design rect inside the
+// full-viewport canvas. At zoom 1 the game sits in the design rect as before;
+// zoomed-in content is allowed to spill past it into these margins.
+let viewOffX = 0, viewOffY = 0;
 
 // View zoom/pan on top of gameScale, in 800×530 design units.
 // Screen-design coords = game coords * viewZoom + viewPan.
 let viewZoom = 1, viewPanX = 0, viewPanY = 0;
 const MAX_ZOOM = 4;
 
+// Content spans [pan, pan + size*zoom] in design units; the viewport spans
+// [-margin, size + margin]. Allow any pan that keeps the viewport fully
+// covered; while the content is still smaller than the viewport, center it.
+function clampPanAxis(pan, size, marginPx) {
+  const m = marginPx / gameScale;
+  const lo = size + m - size * viewZoom, hi = -m;
+  return lo > hi ? size * (1 - viewZoom) / 2 : Math.min(hi, Math.max(lo, pan));
+}
+
 function clampView() {
   viewZoom = Math.min(Math.max(viewZoom, 1), MAX_ZOOM);
-  viewPanX = Math.min(0, Math.max(800 * (1 - viewZoom), viewPanX));
-  viewPanY = Math.min(0, Math.max(530 * (1 - viewZoom), viewPanY));
+  viewPanX = clampPanAxis(viewPanX, 800, viewOffX);
+  viewPanY = clampPanAxis(viewPanY, 530, viewOffY);
 }
 
 function resetView() {
@@ -52,7 +65,8 @@ function resetView() {
 // Client coords → screen-design units (800×530 space, before zoom inversion)
 function toScreenDesign(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  return { x:(clientX - rect.left) / gameScale, y:(clientY - rect.top) / gameScale };
+  return { x:(clientX - rect.left - viewOffX) / gameScale,
+           y:(clientY - rect.top  - viewOffY) / gameScale };
 }
 
 // Client coords → game coords (inverts the view zoom/pan)
@@ -78,10 +92,13 @@ function resizeCanvas() {
   const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
   document.body.style.height = vh + 'px';
   gameScale = Math.min(vw / 800, vh / 530);
-  canvas.width  = Math.round(800 * gameScale * dpr);
-  canvas.height = Math.round(530 * gameScale * dpr);
-  canvas.style.width  = Math.round(800 * gameScale) + 'px';
-  canvas.style.height = Math.round(530 * gameScale) + 'px';
+  viewOffX = (vw - 800 * gameScale) / 2;
+  viewOffY = (vh - 530 * gameScale) / 2;
+  canvas.width  = Math.round(vw * dpr);
+  canvas.height = Math.round(vh * dpr);
+  canvas.style.width  = Math.round(vw) + 'px';
+  canvas.style.height = Math.round(vh) + 'px';
+  clampView();
   dirty = true;
 }
 window.addEventListener('resize', resizeCanvas);
@@ -898,7 +915,9 @@ function render() {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   const s = gameScale * dpr * viewZoom;
-  ctx.setTransform(s, 0, 0, s, viewPanX * gameScale * dpr, viewPanY * gameScale * dpr);
+  ctx.setTransform(s, 0, 0, s,
+    (viewOffX + viewPanX * gameScale) * dpr,
+    (viewOffY + viewPanY * gameScale) * dpr);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
   if      (screen === STATE.INTRO)      drawIntro();
@@ -918,7 +937,7 @@ function render() {
 // outside the view transform so it stays put while zoomed/panned)
 function drawZoomIndicator() {
   const dpr = window.devicePixelRatio || 1;
-  ctx.setTransform(gameScale * dpr, 0, 0, gameScale * dpr, 0, 0);
+  ctx.setTransform(gameScale * dpr, 0, 0, gameScale * dpr, viewOffX * dpr, viewOffY * dpr);
   ctx.fillStyle = 'rgba(0,0,0,0.7)';
   ctx.fillRect(6, 505, 78, 19);
   ctx.strokeStyle = '#00AA00';
