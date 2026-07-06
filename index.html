@@ -113,6 +113,8 @@ let dirty = true;
 
 // Grid size: 2 for leicht/mittel/schwer (2×2×2 cubes), 3 for wahnsinn (3×3×3 cubes)
 let G = 2;
+// Rotation for the puzzle view: false = −90° around Z (classic), true = 180° ("verrückte 180")
+let ROT180 = false;
 // Projection scale: 120 for G=2, 240/3 for G=3 — keeps the cube the same visual footprint
 let PROJ_S = 120;
 
@@ -149,6 +151,8 @@ function project(x, y, z, ox, oy) {
 }
 
 function rotateZ(x, y, z) {
+  // 180° around Z: (X,Y,Z) → (G−X, G−Y, Z)
+  if (ROT180) return { x: G-x, y: G-y, z: z };
   // −90° around Z: (X,Y,Z) → (Y, G−X, Z)
   return { x: y, y: G-x, z: z };
 }
@@ -164,10 +168,11 @@ function previewFaceVisible(nx, ny, nz) {
   return (-nx + 4*ny + nz) > 0; // dot with view direction (-1,4,1)
 }
 
-// Returns true if face normal (nx,ny,nz) faces toward viewer in puzzle orientation (after −90° Z-rotation)
-// Puzzle view direction in original coords = (−4,−1,1)
+// Returns true if face normal (nx,ny,nz) faces toward viewer in puzzle orientation.
+// Puzzle view direction in original (pre-rotation) coords = R⁻¹·(−1,4,1):
+// (−4,−1,1) after −90° Z-rotation, (1,−4,1) after 180° Z-rotation
 function puzzleFaceVisible(nx, ny, nz) {
-  return (-4*nx - ny + nz) > 0;
+  return ROT180 ? (nx - 4*ny + nz) > 0 : (-4*nx - ny + nz) > 0;
 }
 
 // Core visibility check: edge is visible if any perpendicular face is
@@ -301,20 +306,36 @@ function clipSegPoly(p0, p1, poly) {
   return [t0, t1];
 }
 
-// Project 4 face corners (pre-rotation 3D) to puzzle screen coords, returns [{x,y}] polygon
+// Project 4 face corners (pre-rotation 3D) to puzzle screen coords, returns [{x,y}] polygon.
+// Winding is normalized to what clipSegPoly expects (outward edge normals), since the
+// screen winding of a fixed vertex order flips depending on the active rotation.
 function faceScreenPoly(pts) {
-  return pts.map(([x,y,z]) => {
+  const poly = pts.map(([x,y,z]) => {
     const r=rotateZ(x,y,z);
     const p=project(r.x,r.y,r.z, PUZZLE_OX,PUZZLE_OY);
     return {x:p.sx, y:p.sy};
   });
+  let area2 = 0;
+  for (let i=0;i<poly.length;i++) {
+    const a=poly[i], b=poly[(i+1)%poly.length];
+    area2 += a.x*b.y - b.x*a.y;
+  }
+  if (area2 > 0) poly.reverse();
+  return poly;
 }
 
-// Build list of occluding face records from active cubes (puzzle view: −X,−Y,+Z faces)
+// Build list of occluding face records from active cubes
+// (puzzle view: −X,−Y,+Z faces for −90°; +X,−Y,+Z faces for 180°)
 function buildOccluders(active) {
   const occ=[];
   for(let i=0;i<G;i++) for(let j=0;j<G;j++) for(let k=0;k<G;k++) {
     if(!active[i][j][k]) continue;
+    if(ROT180){
+      // +X face at X=i+1 (exposed toward +X viewer); edge is in-front when edgeCoord >= coord
+      if(!isActive(active,i+1,j,k))
+        occ.push({ poly: faceScreenPoly([[i+1,j,k],[i+1,j+1,k],[i+1,j+1,k+1],[i+1,j,k+1]]),
+                   axis:'x', coord:i+1, above:true });
+    } else
     // −X face at X=i (exposed toward −X viewer); edge is in-front when edgeCoord <= coord
     if(!isActive(active,i-1,j,k))
       occ.push({ poly: faceScreenPoly([[i,j,k],[i,j+1,k],[i,j+1,k+1],[i,j,k+1]]),
@@ -463,7 +484,7 @@ function generatePuzzle(difficulty) {
     } else if(difficulty==='medium'){
       const count=3+Math.floor(Math.random()*5); // 3–7
       a=growActive(count);
-    } else if(difficulty==='hard') { // hard: 3–6, any connectivity
+    } else if(difficulty==='hard'||difficulty==='verrueckt') { // 3–6, any connectivity
       const count=3+Math.floor(Math.random()*4); // 3–6
       a=makeActive();
       const cubes=shuffledCubes();
@@ -519,6 +540,7 @@ function isValidPuzzle(a,difficulty){
   if(difficulty==='easy')     return n>=1&&n<=2&&isConnected(a);
   if(difficulty==='medium')   return n>=3&&n<=7&&isConnected(a);
   if(difficulty==='hard')     return n>=3&&n<=6;
+  if(difficulty==='verrueckt')return n>=3&&n<=6;
   if(difficulty==='wahnsinn') return n>=5&&n<=18;
   return false;
 }
@@ -529,6 +551,7 @@ const DIFF_BTNS = [
   { label:'MITTEL',   sub:'3–7 WÜRFEL  |  VERBUNDEN',    diff:'medium',   x:260,y:226,w:280,h:48 },
   { label:'SCHWER',   sub:'3–6 WÜRFEL  |  BELIEBIG',     diff:'hard',     x:260,y:296,w:280,h:48 },
   { label:'WAHNSINN', sub:'3×3×3 GITTER  |  ZUFÄLLIG',  diff:'wahnsinn', x:260,y:366,w:280,h:48, danger:true },
+  { label:'VERRÜCKTE 180', sub:'3–6 WÜRFEL  |  180° GEDREHT', diff:'verrueckt', x:260,y:436,w:280,h:48, accent:'#FF66FF' },
 ];
 let hoveredBtn = null;
 
@@ -570,7 +593,7 @@ document.addEventListener('keydown', e => {
     if(screen!==STATE.ABOUT){ aboutPrevScreen=screen; clickSound(); setScreen(STATE.ABOUT); }
     return;
   }
-  if(['1','2','3','4'].includes(e.key) && (screen===STATE.DIFFICULTY||screen===STATE.PLAYING||screen===STATE.COMPLETE)){
+  if(['1','2','3','4','5'].includes(e.key) && (screen===STATE.DIFFICULTY||screen===STATE.PLAYING||screen===STATE.COMPLETE)){
     const btn=DIFF_BTNS[Number(e.key)-1];
     clickSound(); startNewPuzzle(btn.diff); return;
   }
@@ -881,8 +904,9 @@ function handleGameClick(mx,my) {
 
 function startNewPuzzle(difficulty) {
   currentDifficulty = difficulty;
-  // Set grid size and projection scale for the chosen difficulty
+  // Set grid size, rotation, and projection scale for the chosen difficulty
   G      = difficulty === 'wahnsinn' ? 3 : 2;
+  ROT180 = difficulty === 'verrueckt';
   PROJ_S = 240 / G; // 120 for 2×2×2, 80 for 3×3×3 — same visual footprint
   activeState       = generatePuzzle(difficulty);
   puzzleEdgeCache   = getPuzzleEdges(activeState);
@@ -992,12 +1016,14 @@ function drawRotationArms() {
   ctx.strokeStyle = '#00FF66'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(jx, jy); ctx.lineTo(pDN.sx, pDN.sy); ctx.stroke();
 
-  // Green 3D arc: oblique XY sweep from oblique-Y dir (90°) to -X dir (180°)
+  // Blue 3D arc: oblique XY sweep ending at the Urkörper's -X dir (180°).
+  // Starts at oblique-Y (90°) for the -90° levels → quarter sweep; at +X (0°)
+  // for the 180° level → half sweep, so the arc itself shows the rotation amount.
   const S = PROJ_S, ob = S / 4;
   const oblDir = (theta) => ({ dx: S*Math.cos(theta) + ob*Math.sin(theta), dy: ob*Math.sin(theta) });
-  const dAngle = Math.PI / 2, uAngle = Math.PI;
-  const dDir = oblDir(dAngle);
-  const arcR = ob / Math.hypot(dDir.dx, dDir.dy);
+  const dAngle = ROT180 ? 0 : Math.PI / 2, uAngle = Math.PI;
+  const nDir = oblDir(Math.PI / 2); // fixed normalization → same visual radius in both modes
+  const arcR = ob / Math.hypot(nDir.dx, nDir.dy);
   ctx.strokeStyle = '#3388FF'; ctx.lineWidth = 1.5;
   ctx.beginPath();
   for (let i = 0; i <= 24; i++) {
@@ -1089,11 +1115,11 @@ function drawDifficulty() {
   drawAxisDecoration(80, 490);
 
   for(const btn of DIFF_BTNS){
-    drawBtn(btn, btn.label, btn.danger ? '#FF3333' : '#FFFF00', '20px Courier New', btn.h/2+7);
+    drawBtn(btn, btn.label, btn.accent || (btn.danger ? '#FF3333' : '#FFFF00'), '20px Courier New', btn.h/2+7);
   }
 }
 
-const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', wahnsinn:'WAHNSINN'};
+const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', wahnsinn:'WAHNSINN', verrueckt:'VERRÜCKTE 180'};
 
 function drawDifficultyLabel() {
   ctx.fillStyle='#888'; ctx.font='11px Courier New'; ctx.textAlign='center';
@@ -1223,7 +1249,7 @@ function drawAbout() {
     ['#888',    ''],
     ['#FFFF00', 'Tastenkürzel:'],
     ['#888',    'M — Menü   |   S — Sound an/aus   |   N — Modus wechseln'],
-    ['#888',    '1–4 — Schwierigkeit wählen (auch während des Spiels)'],
+    ['#888',    '1–5 — Schwierigkeit wählen (auch während des Spiels)'],
     ['#FFFF00', 'Modi:'],
     ['#888',    'TRAINING — Falsche Klicks werden angezeigt, richtige Kanten bleiben'],
     ['#888',    'fixiert. Rätsel sind stets eindeutig lösbar.'],

@@ -16,7 +16,7 @@ To preview changes, just reload `index.html` in a browser (or use the project's 
 
 All code is inline JS inside `index.html`'s `<script>` block, organized into informal sections (not actual modules/files):
 
-- **Geometry** — `buildEdges`, `project` (isometric projection), `rotateZ` (90° Z-axis rotation: `(X,Y,Z) → (2−Y, X, Z)`), `isActive`
+- **Geometry** — `buildEdges`, `project` (isometric projection), `rotateZ` (Z-axis rotation: −90° `(X,Y,Z) → (Y, G−X, Z)`, or 180° `(X,Y,Z) → (G−X, G−Y, Z)` when the `ROT180` flag is set by the "verrueckt" difficulty), `isActive`
 - **Visibility engine** — `isEdgeVisible`, `buildOccluders`/`buildPreviewOccluders`, `visibleSegment`/`visiblePreviewSegment`, `clipSegPoly` (Sutherland-Hodgman polygon clipping), `getPuzzleEdges`/`getPreviewEdges`. Determines which edges of the rotated solid are visible to the player and computes the visible sub-segment when partially occluded.
 - **Puzzle generation** — `makeActive`, `growActive`, `generatePuzzle`, `isValidPuzzle`, `isConnected`. Generates a random active-cube configuration per difficulty.
 - **Input handling** — `handleClick` (screen-level routing), `handleGameClick` (edge hit-testing via `ptSegDist`), `getHitDist`
@@ -47,12 +47,15 @@ Switching modes via `drawModeBtn`'s button resets the current puzzle if on `STAT
 
 ### Difficulty levels
 
-| Difficulty | Grid | Active cubes | Adjacency |
-|---|---|---|---|
-| `easy` | 2×2×2 | 1–2 | connected only |
-| `medium` | 2×2×2 | 3–7 | connected only |
-| `hard` | 2×2×2 | 3–6 | any |
-| `wahnsinn` | 3×3×3 | random | fully random |
+| Difficulty | Grid | Active cubes | Adjacency | Rotation |
+|---|---|---|---|---|
+| `easy` | 2×2×2 | 1–2 | connected only | −90° |
+| `medium` | 2×2×2 | 3–7 | connected only | −90° |
+| `hard` | 2×2×2 | 3–6 | any | −90° |
+| `wahnsinn` | 3×3×3 | random | fully random | −90° |
+| `verrueckt` ("VERRÜCKTE 180") | 2×2×2 | 3–6 | any | 180° |
+
+`verrueckt` sets the `ROT180` flag: `rotateZ`, `puzzleFaceVisible`, `buildOccluders`, and the `drawRotationArms` arc all branch on it so the puzzle view, hidden-edge logic, and the rotation indicator reflect a 180° turn.
 
 ## Design docs
 
