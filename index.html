@@ -489,19 +489,19 @@ function generatePuzzle(difficulty) {
     } else if(difficulty==='medium'){
       const count=3+Math.floor(Math.random()*5); // 3–7
       a=growActive(count);
-    } else if(difficulty==='hard'||difficulty==='verrueckt') { // 3–6, any connectivity
+    } else if(difficulty==='hard'||difficulty==='hard180') { // 3–6, any connectivity
       const count=3+Math.floor(Math.random()*4); // 3–6
       a=makeActive();
       const cubes=shuffledCubes();
       for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
-    } else { // wahnsinn: 3×3×3, 5–18 cubes, fully random
+    } else { // wahnsinn / wahnsinn180: 3×3×3, 5–18 cubes, fully random
       const count=5+Math.floor(Math.random()*14); // 5–18
       a=makeActive();
       const cubes=shuffledCubes();
       for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
     }
     if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) {
-      if (!arcadeMode) activateInvisibleCubes(a);
+      activateInvisibleCubes(a); // always: "unsichtbare" Würfel setzen, sonst in Profi kaum lösbar
       return a;
     }
   }
@@ -545,18 +545,20 @@ function isValidPuzzle(a,difficulty){
   if(difficulty==='easy')     return n>=1&&n<=2&&isConnected(a);
   if(difficulty==='medium')   return n>=3&&n<=7&&isConnected(a);
   if(difficulty==='hard')     return n>=3&&n<=6;
-  if(difficulty==='verrueckt')return n>=3&&n<=6;
+  if(difficulty==='hard180')  return n>=3&&n<=6;
   if(difficulty==='wahnsinn') return n>=5&&n<=18;
+  if(difficulty==='wahnsinn180') return n>=5&&n<=18;
   return false;
 }
 
 // ── Difficulty Select ──
 const DIFF_BTNS = [
-  { label:'LEICHT',   sub:'1–2 WÜRFEL  |  VERBUNDEN',    diff:'easy',     x:260,y:121,w:280,h:48 },
-  { label:'MITTEL',   sub:'3–7 WÜRFEL  |  VERBUNDEN',    diff:'medium',   x:260,y:191,w:280,h:48 },
-  { label:'SCHWER',   sub:'3–6 WÜRFEL  |  BELIEBIG',     diff:'hard',     x:260,y:261,w:280,h:48 },
-  { label:'WAHNSINN', sub:'3×3×3 GITTER  |  ZUFÄLLIG',  diff:'wahnsinn', x:260,y:331,w:280,h:48, danger:true },
-  { label:'VERRÜCKTE 180', sub:'3–6 WÜRFEL  |  180° GEDREHT', diff:'verrueckt', x:260,y:401,w:280,h:48, accent:'#FF66FF' },
+  { label:'LEICHT',   diff:'easy',   x:260,y:156,w:280,h:48 },
+  { label:'MITTEL',   diff:'medium', x:260,y:226,w:280,h:48 },
+  { label:'SCHWER',      diff:'hard',    x:260,y:296,w:132,h:48, accent:'#FF3333', font:'16px Courier New' },
+  { label:'SCHWER 180',  diff:'hard180', x:408,y:296,w:132,h:48, accent:'#FF3333', font:'16px Courier New' },
+  { label:'WAHNSINN',     diff:'wahnsinn',    x:260,y:366,w:132,h:48, accent:'#00FFFF', font:'16px Courier New' },
+  { label:'WAHNSINN 180', diff:'wahnsinn180', x:408,y:366,w:132,h:48, accent:'#00FFFF', font:'16px Courier New' },
 ];
 let hoveredBtn = null;
 
@@ -598,7 +600,7 @@ document.addEventListener('keydown', e => {
     if(screen!==STATE.ABOUT){ aboutPrevScreen=screen; clickSound(); setScreen(STATE.ABOUT); }
     return;
   }
-  if(['1','2','3','4','5'].includes(e.key) && (screen===STATE.DIFFICULTY||screen===STATE.PLAYING||screen===STATE.COMPLETE)){
+  if(['1','2','3','4','5','6'].includes(e.key) && (screen===STATE.DIFFICULTY||screen===STATE.PLAYING||screen===STATE.COMPLETE)){
     const btn=DIFF_BTNS[Number(e.key)-1];
     clickSound(); startNewPuzzle(btn.diff); return;
   }
@@ -910,8 +912,8 @@ function handleGameClick(mx,my) {
 function startNewPuzzle(difficulty) {
   currentDifficulty = difficulty;
   // Set grid size, rotation, and projection scale for the chosen difficulty
-  G      = difficulty === 'wahnsinn' ? 3 : 2;
-  ROT180 = difficulty === 'verrueckt';
+  G      = (difficulty === 'wahnsinn' || difficulty === 'wahnsinn180') ? 3 : 2;
+  ROT180 = (difficulty === 'wahnsinn180' || difficulty === 'hard180');
   PROJ_S = 240 / G; // 120 for 2×2×2, 80 for 3×3×3 — same visual footprint
   // See the PREVIEW_OY/PUZZLE_OY comment: 180° needs preview lower + puzzle
   // higher so both rotation arms are horizontal. Must be set before the
@@ -1126,11 +1128,11 @@ function drawDifficulty() {
   drawAxisDecoration(80, 490);
 
   for(const btn of DIFF_BTNS){
-    drawBtn(btn, btn.label, btn.accent || (btn.danger ? '#FF3333' : '#FFFF00'), '20px Courier New', btn.h/2+7);
+    drawBtn(btn, btn.label, btn.accent || (btn.danger ? '#FF3333' : '#FFFF00'), btn.font || '20px Courier New', btn.h/2+7);
   }
 }
 
-const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', wahnsinn:'WAHNSINN', verrueckt:'VERRÜCKTE 180'};
+const DIFF_LABELS = {easy:'LEICHT', medium:'MITTEL', hard:'SCHWER', hard180:'SCHWER 180', wahnsinn:'WAHNSINN', wahnsinn180:'WAHNSINN 180'};
 
 function drawDifficultyLabel() {
   ctx.fillStyle='#888'; ctx.font='11px Courier New'; ctx.textAlign='center';
@@ -1262,12 +1264,12 @@ function drawAbout() {
     ['#888',    ''],
     ['#FFFF00', 'Tastenkürzel:'],
     ['#888',    'M — Menü   |   S — Sound an/aus   |   N — Modus wechseln'],
-    ['#888',    '1–5 — Schwierigkeit wählen (auch während des Spiels)'],
+    ['#888',    '1–6 — Schwierigkeit wählen (auch während des Spiels)'],
     ['#FFFF00', 'Modi:'],
     ['#888',    'TRAINING — Falsche Klicks werden angezeigt, richtige Kanten bleiben'],
     ['#888',    'fixiert. Rätsel sind stets eindeutig lösbar.'],
-    ['#888',    'PROFI — Klicks schalten Kanten ein/aus, auch falsche. Rätsel können'],
-    ['#888',    '"unsichtbare" Würfel enthalten.'],
+    ['#888',    'PROFI — Klicks schalten Kanten ein/aus, auch falsche. Keine'],
+    ['#888',    'Fehleranzeige, der Punktezähler bleibt verborgen.'],
 	['#888',    ''],
     ['#00FF66', 'ROTAXIS basiert auf einem Turbo-Pascal-Programm aus dem Jahr 1992,'],
     ['#00FF66', 'entwickelt von einem österreichischen Lehrer zur Vermittlung von 3D-Wahrnehmung.'],
