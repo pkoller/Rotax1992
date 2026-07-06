@@ -916,8 +916,8 @@ function startNewPuzzle(difficulty) {
   // See the PREVIEW_OY/PUZZLE_OY comment: 180° needs preview lower + puzzle
   // higher so both rotation arms are horizontal. Must be set before the
   // projected edge caches below are built.
-  PREVIEW_OY = ROT180 ? 395 : 355;
-  PUZZLE_OY  = ROT180 ? 335 : 395;
+  PREVIEW_OY = ROT180 ? 385 : 355;
+  PUZZLE_OY  = ROT180 ? 325 : 395;
   activeState       = generatePuzzle(difficulty);
   puzzleEdgeCache   = getPuzzleEdges(activeState);
   totalVisible      = puzzleEdgeCache.length;
@@ -1362,8 +1362,8 @@ function drawComplete() {
   if (!arcadeMode) drawScoreBox();
 
   ctx.fillStyle='#00FF00'; ctx.font='bold 22px Courier New'; ctx.textAlign='center';
-  // 180° layout raises the puzzle grid (top ≈ y95), so lift the text clear of it
-  ctx.fillText('FERTIG!', 580, ROT180 ? 82 : 120);
+  // 180° layout raises the puzzle grid (top ≈ y85), so lift the text clear of it
+  ctx.fillText('FERTIG!', 580, ROT180 ? 72 : 120);
   ctx.textAlign='left';
 
   for(const btn of COMPLETE_BTNS){
