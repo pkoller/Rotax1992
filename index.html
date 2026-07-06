@@ -292,6 +292,20 @@ function getPreviewEdges(active) {
     .filter(pe => pe.seg !== null);
 }
 
+// Every wireframe edge of the solid regardless of view direction (faceVisibleFn
+// always true = "some perpendicular face is exposed and it's not a seam"), as
+// full projected preview segments. Drawn dim underneath the bright visible pass,
+// so only the hidden ("unsichtbare") parts remain in the muted color.
+function getSolidPreviewSegments(active) {
+  return getEdges()
+    .filter(e => isEdgeVisible(e, active, () => true))
+    .map(e => {
+      const p1=project(e.x1,e.y1,e.z1, PREVIEW_OX,PREVIEW_OY);
+      const p2=project(e.x2,e.y2,e.z2, PREVIEW_OX,PREVIEW_OY);
+      return { sx1:p1.sx, sy1:p1.sy, sx2:p2.sx, sy2:p2.sy };
+    });
+}
+
 // Clip segment p0→p1 ({x,y} screen points) against convex CCW-wound polygon.
 // Returns [tEnter, tExit] ∈ [0,1] of the visible sub-segment, or null if fully outside.
 function clipSegPoly(p0, p1, poly) {
@@ -412,10 +426,6 @@ function getPuzzleEdges(active) {
 }
 
 // ── Puzzle Generator ──
-function cloneActive(a) {
-  return a.map(plane => plane.map(row => [...row]));
-}
-
 function makeActive() {
   const a=[];
   for(let i=0;i<G;i++){a.push([]);for(let j=0;j<G;j++){a[i].push([]);for(let k=0;k<G;k++)a[i][j].push(false);}}
@@ -500,43 +510,10 @@ function generatePuzzle(difficulty) {
       const cubes=shuffledCubes();
       for(let i=0;i<count;i++) a[cubes[i][0]][cubes[i][1]][cubes[i][2]]=true;
     }
-    if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) {
-      activateInvisibleCubes(a); // always: "unsichtbare" Würfel setzen, sonst in Profi kaum lösbar
-      return a;
-    }
+    if(isValidPuzzle(a,difficulty) && getPuzzleEdges(a).length>0) return a;
   }
   // fallback: single cube
   const a=makeActive(); a[0][0][0]=true; return a;
-}
-
-function activateInvisibleCubes(a) {
-  // Any inactive cube that wouldn't add visible preview edges if activated is set active.
-  // Iterate to fixpoint because activating one cube can expose previously-invisible ones.
-  let changed = true;
-  while (changed) {
-    changed = false;
-    const baseCount = getPreviewEdges(a).length;
-    for (let i=0; i<G; i++) for (let j=0; j<G; j++) for (let k=0; k<G; k++) {
-      if (a[i][j][k]) continue;
-      const test = cloneActive(a);
-      test[i][j][k] = true;
-      if (getPreviewEdges(test).length === baseCount) { a[i][j][k] = true; changed = true; }
-    }
-  }
-  // A fully active block is no puzzle at all. If the fixpoint filled every
-  // cube, carve one visible cube back out (one whose removal changes the
-  // preview edges) so a real shape remains to trace.
-  if (countActive(a) === G*G*G) {
-    const baseCount = getPreviewEdges(a).length;
-    for (const [i,j,k] of shuffledCubes()) {
-      const test = cloneActive(a);
-      test[i][j][k] = false;
-      if (getPreviewEdges(test).length !== baseCount && getPuzzleEdges(test).length > 0) {
-        a[i][j][k] = false;
-        break;
-      }
-    }
-  }
 }
 
 function isValidPuzzle(a,difficulty){
@@ -1156,6 +1133,26 @@ function strokeGlowSegments(segs, color, blur) {
   ctx.shadowBlur=0; ctx.lineCap='butt';
 }
 
+// ── Preview panel (Urkörper) ──
+// 1. Faint full grid wireframe, 2. every solid edge in a muted second green
+//    (the parts that stay uncovered are the invisible/hidden lines),
+//    3. visible edges thick glowing green on top.
+function drawPreviewSolid() {
+  ctx.strokeStyle='#777777'; ctx.lineWidth=1;
+  for(const e of getEdges()){
+    const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
+    const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
+    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
+  }
+  ctx.strokeStyle='#4F8F4F'; ctx.lineWidth=2;
+  ctx.beginPath();
+  for(const s of getSolidPreviewSegments(activeState)){
+    ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2);
+  }
+  ctx.stroke();
+  strokeGlowSegments(getPreviewEdges(activeState).map(pe=>pe.seg), '#00AA00', 20);
+}
+
 function drawGame() {
   drawRotaxLogo(20, 6);
   drawAxisDecoration(80, 495);
@@ -1165,16 +1162,7 @@ function drawGame() {
   // Arms first so the solids draw over them
   drawRotationArms();
 
-  // ── Preview panel (Urkörper) ──
-  // 1. Faint full wireframe (all edges in preview coords)
-  ctx.strokeStyle='#777777'; ctx.lineWidth=1;
-  for(const e of getEdges()){
-    const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
-    const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
-    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
-  }
-  // 2. Visible edges thick green on top
-  strokeGlowSegments(getPreviewEdges(activeState).map(pe=>pe.seg), '#00AA00', 20);
+  drawPreviewSolid();
 
   // ── Puzzle panel (Dünnkörper) — full wireframe dim ──
   ctx.strokeStyle='#777777'; ctx.lineWidth=1;
@@ -1343,13 +1331,7 @@ function drawComplete() {
   // Arms first so the solids draw over them
   drawRotationArms();
 
-  ctx.strokeStyle='#777777'; ctx.lineWidth=1;
-  for(const e of getEdges()){
-    const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
-    const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
-    ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
-  }
-  strokeGlowSegments(getPreviewEdges(activeState).map(pe=>pe.seg), '#00AA00', 20);
+  drawPreviewSolid();
 
   ctx.strokeStyle='#777777'; ctx.lineWidth=1;
   for(const e of getEdges()){
