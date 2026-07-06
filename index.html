@@ -1160,6 +1160,9 @@ function drawGame() {
 
   drawDifficultyLabel();
 
+  // Arms first so the solids draw over them
+  drawRotationArms();
+
   // ── Preview panel (Urkörper) ──
   // 1. Faint full wireframe (all edges in preview coords)
   ctx.strokeStyle='#777777'; ctx.lineWidth=1;
@@ -1204,7 +1207,6 @@ function drawGame() {
   }
 
   if (debugHitZones) drawHitZones();
-  drawRotationArms();
   if (!arcadeMode) drawScoreBox();
   drawMenuBtn();
 }
@@ -1336,6 +1338,9 @@ function drawComplete() {
 
   drawDifficultyLabel();
 
+  // Arms first so the solids draw over them
+  drawRotationArms();
+
   ctx.strokeStyle='#777777'; ctx.lineWidth=1;
   for(const e of getEdges()){
     const p1=project(e.x1,e.y1,e.z1,PREVIEW_OX,PREVIEW_OY);
@@ -1358,7 +1363,6 @@ function drawComplete() {
   }
   strokeGlowSegments(doneSegs, '#00FF00', 24);
 
-  drawRotationArms();
   if (!arcadeMode) drawScoreBox();
 
   ctx.fillStyle='#00FF00'; ctx.font='bold 22px Courier New'; ctx.textAlign='center';
