@@ -1134,7 +1134,7 @@ function strokeGlowSegments(segs, color, blur) {
 }
 
 // ── Preview panel (Urkörper) ──
-// 1. Faint full grid wireframe, 2. every solid edge in a muted second green
+// 1. Faint full grid wireframe, 2. every solid edge in light blue
 //    (the parts that stay uncovered are the invisible/hidden lines),
 //    3. visible edges thick glowing green on top.
 function drawPreviewSolid() {
@@ -1144,7 +1144,7 @@ function drawPreviewSolid() {
     const p2=project(e.x2,e.y2,e.z2,PREVIEW_OX,PREVIEW_OY);
     ctx.beginPath(); ctx.moveTo(p1.sx,p1.sy); ctx.lineTo(p2.sx,p2.sy); ctx.stroke();
   }
-  ctx.strokeStyle='#4F8F4F'; ctx.lineWidth=2;
+  ctx.strokeStyle='#77BBDD'; ctx.lineWidth=2;
   ctx.beginPath();
   for(const s of getSolidPreviewSegments(activeState)){
     ctx.moveTo(s.sx1,s.sy1); ctx.lineTo(s.sx2,s.sy2);
