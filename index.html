@@ -767,6 +767,7 @@ function hasGameProgress() {
 
 function applyModeSwitch() {
   arcadeMode=!arcadeMode;
+  if(arcadeMode) profiSound(); else trainingSound();
   if(screen===STATE.PLAYING||screen===STATE.COMPLETE) startNewPuzzle(currentDifficulty);
   else requestRender();
 }
@@ -806,6 +807,17 @@ function errorSound() {
 
 function clickSound() {
   beep(800, 40, 'square');
+}
+
+function profiSound() {
+  // Rising power-up fanfare — the motivated "Pro!"
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,70,'square'),i*55));
+}
+
+function trainingSound() {
+  // Two mellow descending sine notes — the calm "Training"
+  beep(392, 140, 'sine');
+  setTimeout(()=>beep(330, 220, 'sine'), 160);
 }
 
 // ── Game Interaction ──
