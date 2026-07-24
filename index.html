@@ -809,26 +809,15 @@ function clickSound() {
   beep(800, 40, 'square');
 }
 
-function speak(text, rate, pitch) {
-  if (!soundEnabled || !('speechSynthesis' in window)) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'de-DE'; u.rate = rate; u.pitch = pitch;
-  speechSynthesis.speak(u);
-}
-
 function profiSound() {
-  // Motivated "Pro!" shout over a rising power-up fanfare. The beeps also
-  // cover browsers where speechSynthesis has no voices installed.
+  // Rising power-up fanfare — the motivated "Pro!"
   [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,70,'square'),i*55));
-  speak('Pro!', 1.2, 1.7);
 }
 
 function trainingSound() {
-  // Calm spoken "Training" over two mellow descending sine notes.
+  // Two mellow descending sine notes — the calm "Training"
   beep(392, 140, 'sine');
   setTimeout(()=>beep(330, 220, 'sine'), 160);
-  speak('Training', 0.85, 0.8);
 }
 
 // ── Game Interaction ──
