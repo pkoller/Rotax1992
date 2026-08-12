@@ -568,7 +568,9 @@ function hoverTargets(){
   if(pendingConfirmAction) return [MODE_CONFIRM_OK_BTN, MODE_CONFIRM_CANCEL_BTN];
   const t=[SOUND_BTN, MODE_BTN];
   if(screen!==STATE.ABOUT) t.push(ABOUT_BTN);
+  if(screen!==STATE.IMPRESSUM) t.push(IMPRESSUM_BTN);
   if(screen===STATE.ABOUT)      t.push(MENU_BTN, ABOUT_BACK_BTN);
+  else if(screen===STATE.IMPRESSUM) t.push(MENU_BTN, IMPRESSUM_BACK_BTN);
   else if(screen===STATE.INTRO) t.push(MENU_BTN);
   else if(screen===STATE.DIFFICULTY) t.push(...DIFF_BTNS);
   else if(screen===STATE.PLAYING)    t.push(MENU_BTN);
@@ -594,11 +596,15 @@ document.addEventListener('keydown', e => {
   }
   if(e.key==='m'||e.key==='M'){
     if(screen===STATE.PLAYING){ clickSound(); requestConfirm('menu'); }
-    else if(screen===STATE.COMPLETE||screen===STATE.INTRO||screen===STATE.ABOUT){ clickSound(); setScreen(STATE.DIFFICULTY); }
+    else if(screen===STATE.COMPLETE||screen===STATE.INTRO||screen===STATE.ABOUT||screen===STATE.IMPRESSUM){ clickSound(); setScreen(STATE.DIFFICULTY); }
     return;
   }
   if(e.key==='a'||e.key==='A'){
     if(screen!==STATE.ABOUT){ aboutPrevScreen=screen; clickSound(); setScreen(STATE.ABOUT); }
+    return;
+  }
+  if(e.key==='i'||e.key==='I'){
+    if(screen!==STATE.IMPRESSUM){ impressumPrevScreen=screen; clickSound(); setScreen(STATE.IMPRESSUM); }
     return;
   }
   if(['1','2','3','4','5','6'].includes(e.key) && (screen===STATE.DIFFICULTY||screen===STATE.PLAYING||screen===STATE.COMPLETE)){
@@ -715,11 +721,22 @@ function handleClick(mx,my) {
     const ab=ABOUT_BTN;
     if(mx>=ab.x&&mx<=ab.x+ab.w&&my>=ab.y&&my<=ab.y+ab.h){ aboutPrevScreen=screen; clickSound(); setScreen(STATE.ABOUT); return; }
   }
+  if(screen!==STATE.IMPRESSUM){
+    const ib=IMPRESSUM_BTN;
+    if(mx>=ib.x&&mx<=ib.x+ib.w&&my>=ib.y&&my<=ib.y+ib.h){ impressumPrevScreen=screen; clickSound(); setScreen(STATE.IMPRESSUM); return; }
+  }
   if(screen===STATE.ABOUT){
     const mn=MENU_BTN;
     if(mx>=mn.x&&mx<=mn.x+mn.w&&my>=mn.y&&my<=mn.y+mn.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
     const b=ABOUT_BACK_BTN;
     if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(aboutPrevScreen); return; }
+    return;
+  }
+  if(screen===STATE.IMPRESSUM){
+    const mn=MENU_BTN;
+    if(mx>=mn.x&&mx<=mn.x+mn.w&&my>=mn.y&&my<=mn.y+mn.h){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
+    const b=IMPRESSUM_BACK_BTN;
+    if(mx>=b.x&&mx<=b.x+b.w&&my>=b.y&&my<=b.y+b.h){ clickSound(); setScreen(impressumPrevScreen); return; }
     return;
   }
   if(screen===STATE.INTRO){ clickSound(); setScreen(STATE.DIFFICULTY); return; }
