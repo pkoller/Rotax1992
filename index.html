@@ -1349,11 +1349,13 @@ function drawImpressum() {
     ['#888',    'Haftung: Keine Haftung für die Inhalte externer Links.'],
   ];
   ctx.font='13px Courier New'; ctx.textAlign='left';
-  let y = 100;
+  // Start below the EINSTELLUNGEN group box (bottom ≈ y94) so text never
+  // overlaps it; 20px step keeps the last line clear of the ZURÜCK button.
+  let y = 118;
   for (const [color, text] of lines) {
     ctx.fillStyle = color;
     ctx.fillText(text, 110, y);
-    y += 21;
+    y += 20;
   }
 
   drawBtn(IMPRESSUM_BACK_BTN, 'ZURÜCK', '#B5514D', '15px Courier New');
