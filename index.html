@@ -107,7 +107,7 @@ if (window.visualViewport) {
   window.visualViewport.addEventListener('resize', resizeCanvas);
 }
 
-const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3, ABOUT:4 });
+const STATE = Object.freeze({ INTRO:0, DIFFICULTY:1, PLAYING:2, COMPLETE:3, ABOUT:4, IMPRESSUM:5 });
 let screen = STATE.INTRO;
 let dirty = true;
 
@@ -120,6 +120,7 @@ let PROJ_S = 120;
 
 function setScreen(s) { if (s !== screen) resetView(); screen = s; dirty = true; }
 let aboutPrevScreen = STATE.DIFFICULTY;
+let impressumPrevScreen = STATE.DIFFICULTY;
 function requestRender() { dirty = true; }
 
 // ── Geometry ──
@@ -973,10 +974,12 @@ function render() {
   else if (screen === STATE.PLAYING)    drawGame();
   else if (screen === STATE.COMPLETE)   drawComplete();
   else if (screen === STATE.ABOUT)      drawAbout();
+  else if (screen === STATE.IMPRESSUM)  drawImpressum();
   drawSettingsGroup();
   drawSoundBtn();
   drawModeBtn();
   if (screen !== STATE.ABOUT) drawAboutBtn();
+  if (screen !== STATE.IMPRESSUM) drawImpressumBtn();
   if (pendingConfirmAction) drawConfirmDialog();
   if (viewZoom > 1.001) drawZoomIndicator();
 }
@@ -1243,6 +1246,8 @@ const MENU_BTN = {x:12, y:12, w:100, h:28};
 const SOUND_BTN = {x:133, y:24, w:100, h:28};
 const ABOUT_BTN = {x:688, y:12, w:100, h:28};
 const ABOUT_BACK_BTN = {x:350, y:470, w:100, h:36};
+const IMPRESSUM_BTN = {x:688, y:492, w:100, h:28};
+const IMPRESSUM_BACK_BTN = {x:350, y:470, w:100, h:36};
 
 // Shared button renderer with the difficulty-menu hover style:
 // hovered buttons get a filled accent background and black text.
@@ -1260,6 +1265,10 @@ function drawBtn(b, label, accent, font, textDy) {
 
 function drawAboutBtn() {
   drawBtn(ABOUT_BTN, 'ÜBER', '#888', '13px Courier New');
+}
+
+function drawImpressumBtn() {
+  drawBtn(IMPRESSUM_BTN, 'IMPRESSUM', '#888', '12px Courier New');
 }
 
 function drawAbout() {
@@ -1295,6 +1304,42 @@ function drawAbout() {
   }
 
   drawBtn(ABOUT_BACK_BTN, 'ZURÜCK', '#B5514D', '15px Courier New');
+}
+
+function drawImpressum() {
+  drawMenuBtn();
+  ctx.fillStyle='#00FFFF'; ctx.font='20px Courier New'; ctx.textAlign='center';
+  ctx.fillText('IMPRESSUM', 400, 60);
+  ctx.textAlign='left';
+
+  const lines = [
+    ['#FFFF00', 'Medieninhaber & für den Inhalt verantwortlich:'],
+    ['#00FF66', 'Philipp Koller'],
+    ['#00FF66', 'Blasius-Hueber-Straße 16, 6020 Innsbruck, Österreich'],
+    ['#888',    ''],
+    ['#FFFF00', 'Kontakt:'],
+    ['#00FF66', 'E-Mail: info@knochenwerk.at   ·   Tel.: +43 664 1103661'],
+    ['#888',    ''],
+    ['#FFFF00', 'Unternehmensgegenstand / Zweck:'],
+    ['#888',    'Privates, nicht-kommerzielles Retro-Spielprojekt'],
+    ['#888',    '(3D-Wahrnehmungsspiel).'],
+    ['#888',    ''],
+    ['#FFFF00', 'Offenlegung gemäß §25 MedienG:'],
+    ['#888',    'Medieninhaber und Herausgeber: Philipp Koller, Innsbruck.'],
+    ['#888',    'Grundlegende Richtung: nichtkommerzielles Hobby-/Lernspiel'],
+    ['#888',    'ohne meinungsbildenden Inhalt.'],
+    ['#888',    ''],
+    ['#888',    'Haftung: Keine Haftung für die Inhalte externer Links.'],
+  ];
+  ctx.font='13px Courier New'; ctx.textAlign='left';
+  let y = 100;
+  for (const [color, text] of lines) {
+    ctx.fillStyle = color;
+    ctx.fillText(text, 110, y);
+    y += 21;
+  }
+
+  drawBtn(IMPRESSUM_BACK_BTN, 'ZURÜCK', '#B5514D', '15px Courier New');
 }
 
 function drawSettingsGroup() {
